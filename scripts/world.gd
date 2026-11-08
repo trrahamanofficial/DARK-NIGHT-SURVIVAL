@@ -353,33 +353,44 @@ func _make_hud() -> void:
 
 func _make_mobile_controls(layer: CanvasLayer) -> void:
     var screen := get_viewport().get_visible_rect().size
-    var button_size := Vector2(64, 64)
-    var left_x := 24.0
-    var bottom_y := screen.y - 94.0
-    _add_hold_button(layer, "↑", "move_forward", Vector2(left_x + 70, bottom_y - 70), button_size)
-    _add_hold_button(layer, "↓", "move_back", Vector2(left_x + 70, bottom_y + 2), button_size)
-    _add_hold_button(layer, "←", "move_left", Vector2(left_x, bottom_y + 2), button_size)
-    _add_hold_button(layer, "→", "move_right", Vector2(left_x + 140, bottom_y + 2), button_size)
-    _add_hold_button(layer, "RUN", "run", Vector2(screen.x - 166, bottom_y - 4), Vector2(70, 58))
+    var joystick := Control.new()
+    joystick.name = "VirtualJoystick"
+    joystick.set_script(preload("res://scripts/virtual_joystick.gd"))
+    joystick.position = Vector2(22.0, screen.y - 202.0)
+    joystick.size = Vector2(176.0, 176.0)
+    joystick.add_to_group("touch_controls")
+    joystick.set_meta("base_pos", joystick.position)
+    joystick.set_meta("base_size", joystick.size)
+    joystick.vector_changed.connect(_on_mobile_move_changed)
+    layer.add_child(joystick)
+    var right_x := screen.x - 178.0
+    var bottom_y := screen.y - 88.0
+    _add_hold_button(layer, "RUN", "run", Vector2(right_x, bottom_y - 58.0), Vector2(74, 54))
     var light_button := Button.new()
     light_button.text = "LIGHT"
     light_button.add_to_group("touch_controls")
-    light_button.set_meta("base_pos", Vector2(screen.x - 88, bottom_y - 4))
-    light_button.set_meta("base_size", Vector2(76, 58))
-    light_button.position = Vector2(screen.x - 88, bottom_y - 4)
-    light_button.size = Vector2(76, 58)
+    light_button.set_meta("base_pos", Vector2(screen.x - 92.0, bottom_y - 58.0))
+    light_button.set_meta("base_size", Vector2(76, 54))
+    light_button.position = light_button.get_meta("base_pos")
+    light_button.size = light_button.get_meta("base_size")
     light_button.focus_mode = Control.FOCUS_NONE
-    light_button.add_theme_font_size_override("font_size", 14)
     light_button.pressed.connect(_toggle_player_flashlight)
     layer.add_child(light_button)
     var heal_button := Button.new()
     heal_button.text = "HEAL"
-    heal_button.position = Vector2(screen.x - 88, bottom_y - 72)
-    heal_button.size = Vector2(76, 58)
+    heal_button.add_to_group("touch_controls")
+    heal_button.set_meta("base_pos", Vector2(screen.x - 92.0, bottom_y - 120.0))
+    heal_button.set_meta("base_size", Vector2(76, 54))
+    heal_button.position = heal_button.get_meta("base_pos")
+    heal_button.size = heal_button.get_meta("base_size")
     heal_button.focus_mode = Control.FOCUS_NONE
-    heal_button.add_theme_font_size_override("font_size", 14)
     heal_button.pressed.connect(_use_player_medkit)
     layer.add_child(heal_button)
+
+func _on_mobile_move_changed(value: Vector2) -> void:
+    var player := get_node_or_null("Player")
+    if player != null and player.has_method("set_mobile_move_vector"):
+        player.set_mobile_move_vector(value)
 
 func _add_hold_button(layer: CanvasLayer, caption: String, action: StringName, pos: Vector2, button_size: Vector2) -> void:
     var button := Button.new()
