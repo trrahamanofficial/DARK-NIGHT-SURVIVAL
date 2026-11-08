@@ -15,6 +15,7 @@ func _ready() -> void:
     _setup_environment()
     _make_ground()
     _make_forest()
+    _make_forest_details()
     _spawn_player()
     _spawn_monster()
     _spawn_medkit(Vector3(5.0, 0.0, -7.0))
@@ -252,7 +253,8 @@ func _setup_environment() -> void:
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     env.fog_enabled = true
     env.fog_light_color = Color(0.025, 0.035, 0.045)
-    env.fog_density = 0.035
+    env.fog_density = 0.028
+    env.fog_sky_affect = 0.35
     game_environment = env
     var world_env := WorldEnvironment.new()
     world_env.environment = env
@@ -261,7 +263,8 @@ func _setup_environment() -> void:
     moon_light = moon
     moon.rotation_degrees = Vector3(-48, -28, 0)
     moon.light_color = Color(0.38, 0.48, 0.62)
-    moon.light_energy = 0.16
+    moon.light_energy = 0.19
+    moon.directional_shadow_max_distance = 42.0
     moon.shadow_enabled = true
     add_child(moon)
 
@@ -294,6 +297,58 @@ func _make_forest() -> void:
         if Vector2(x, z).length() < 5.5:
             continue
         _make_tree(Vector3(x, 0, z), rng.randf_range(0.75, 1.5))
+
+func _make_forest_details() -> void:
+    var rng := RandomNumberGenerator.new()
+    rng.seed = 20261109
+    var rock_material := StandardMaterial3D.new()
+    rock_material.albedo_color = Color(0.075, 0.082, 0.078)
+    rock_material.roughness = 1.0
+    var shrub_material := StandardMaterial3D.new()
+    shrub_material.albedo_color = Color(0.012, 0.032, 0.018)
+    shrub_material.roughness = 1.0
+    for i in range(70):
+        var x := rng.randf_range(-43.0, 43.0)
+        var z := rng.randf_range(-43.0, 43.0)
+        if Vector2(x, z).length() < 4.5:
+            continue
+        if rng.randf() < 0.58:
+            var rock := MeshInstance3D.new()
+            var rock_mesh := SphereMesh.new()
+            var radius := rng.randf_range(0.18, 0.62)
+            rock_mesh.radius = radius
+            rock_mesh.height = radius * rng.randf_range(0.7, 1.4)
+            rock.mesh = rock_mesh
+            rock.position = Vector3(x, radius * 0.35, z)
+            rock.rotation = Vector3(rng.randf_range(-0.4, 0.4), rng.randf_range(0.0, TAU), rng.randf_range(-0.4, 0.4))
+            rock.material_override = rock_material
+            add_child(rock)
+        else:
+            var shrub := MeshInstance3D.new()
+            var shrub_mesh := SphereMesh.new()
+            var size := rng.randf_range(0.35, 0.85)
+            shrub_mesh.radius = size
+            shrub_mesh.height = size * 1.2
+            shrub.mesh = shrub_mesh
+            shrub.position = Vector3(x, size * 0.35, z)
+            shrub.scale = Vector3(1.4, 0.65, 1.0)
+            shrub.material_override = shrub_material
+            add_child(shrub)
+    for i in range(12):
+        var x := rng.randf_range(-38.0, 38.0)
+        var z := rng.randf_range(-38.0, 38.0)
+        if Vector2(x, z).length() < 7.0:
+            continue
+        var stump := MeshInstance3D.new()
+        var stump_mesh := CylinderMesh.new()
+        stump_mesh.top_radius = 0.08
+        stump_mesh.bottom_radius = 0.16
+        stump_mesh.height = rng.randf_range(1.0, 2.0)
+        stump.mesh = stump_mesh
+        stump.position = Vector3(x, stump_mesh.height * 0.5, z)
+        stump.rotation.z = rng.randf_range(-0.18, 0.18)
+        stump.material_override = rock_material
+        add_child(stump)
 
 func _make_tree(pos: Vector3, scale_factor: float) -> void:
     var tree := StaticBody3D.new()
