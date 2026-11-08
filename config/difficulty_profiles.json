@@ -37,5 +37,5 @@
   ],
   "default": "normal",
   "note": "Tuning values are initial design parameters and must be balanced in playtests.",
-  "implementation_status": "configuration_only"
+  "implementation_status": "first_playable_pass"
 }
