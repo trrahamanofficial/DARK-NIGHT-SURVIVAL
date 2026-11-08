@@ -1,28 +1,64 @@
 extends CharacterBody3D
 
+signal health_changed(current: float, maximum: float)
+signal stamina_changed(current: float, maximum: float)
+signal player_died
+
 @export var walk_speed := 4.2
 @export var run_speed := 6.8
 @export var mouse_sensitivity := 0.0022
 @export var touch_sensitivity := 0.004
 @export var gravity := 18.0
+@export var max_health := 100.0
+@export var max_stamina := 100.0
+@export var stamina_drain_per_second := 22.0
+@export var stamina_regen_per_second := 15.0
+@export var health_regen_delay := 0.0
+
+var health := 100.0
+var stamina := 100.0
 var look_pitch := 0.0
 var flashlight_on := true
+var is_dead := false
+var damage_cooldown := 0.0
+
 @onready var head: Node3D = $Head
 @onready var lamp: SpotLight3D = $Head/Camera3D/Flashlight
 
 func _ready() -> void:
+    health = max_health
+    stamina = max_stamina
+    health_changed.emit(health, max_health)
+    stamina_changed.emit(stamina, max_stamina)
     if not OS.has_feature("mobile"):
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
+func _process(delta: float) -> void:
+    if is_dead or get_tree().paused:
+        return
+    if damage_cooldown > 0.0:
+        damage_cooldown = maxf(0.0, damage_cooldown - delta)
+    var wants_run := Input.is_action_pressed("run") and stamina > 0.5
+    if wants_run:
+        stamina = maxf(0.0, stamina - stamina_drain_per_second * delta)
+    else:
+        stamina = minf(max_stamina, stamina + stamina_regen_per_second * delta)
+    stamina_changed.emit(stamina, max_stamina)
+
 func _unhandled_input(event: InputEvent) -> void:
+    if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+        var world := get_tree().current_scene
+        if world != null and world.has_method("toggle_pause"):
+            world.toggle_pause()
+            get_viewport().set_input_as_handled()
+            return
+    if is_dead or get_tree().paused:
+        return
     if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
         _look(event.relative, mouse_sensitivity)
     elif event is InputEventScreenDrag:
-        # The right half of the screen is reserved for camera look.
         if event.position.x >= get_viewport().get_visible_rect().size.x * 0.42:
             _look(event.relative, touch_sensitivity)
-    elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-        Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
     elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
     elif event is InputEventKey and event.pressed and event.keycode == KEY_F:
@@ -37,10 +73,47 @@ func _toggle_flashlight() -> void:
     flashlight_on = not flashlight_on
     lamp.visible = flashlight_on
 
+func take_damage(amount: float) -> void:
+    if is_dead or amount <= 0.0 or damage_cooldown > 0.0:
+        return
+    health = maxf(0.0, health - amount)
+    damage_cooldown = 0.65
+    health_changed.emit(health, max_health)
+    if health <= 0.0:
+        _die()
+
+func heal(amount: float) -> void:
+    if is_dead or amount <= 0.0:
+        return
+    health = minf(max_health, health + amount)
+    health_changed.emit(health, max_health)
+
+func restore_stamina(amount: float) -> void:
+    if is_dead or amount <= 0.0:
+        return
+    stamina = minf(max_stamina, stamina + amount)
+    stamina_changed.emit(stamina, max_stamina)
+
+func _die() -> void:
+    if is_dead:
+        return
+    is_dead = true
+    velocity = Vector3.ZERO
+    Input.action_release("run")
+    Input.action_release("move_forward")
+    Input.action_release("move_back")
+    Input.action_release("move_left")
+    Input.action_release("move_right")
+    Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+    player_died.emit()
+
 func _physics_process(delta: float) -> void:
+    if is_dead or get_tree().paused:
+        return
     var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
     var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-    var speed := run_speed if Input.is_action_pressed("run") else walk_speed
+    var can_run := Input.is_action_pressed("run") and stamina > 0.5
+    var speed := run_speed if can_run else walk_speed
     velocity.x = move_toward(velocity.x, direction.x * speed, 18.0 * delta)
     velocity.z = move_toward(velocity.z, direction.z * speed, 18.0 * delta)
     if not is_on_floor():
