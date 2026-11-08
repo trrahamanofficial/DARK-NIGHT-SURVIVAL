@@ -68,7 +68,8 @@ func _unhandled_input(event: InputEvent) -> void:
     elif event is InputEventScreenDrag:
         var look_side_start := 0.52 if touch_look_on_right else 0.0
         var look_side_end := 1.0 if touch_look_on_right else 0.48
-        var touch_x_ratio := event.position.x / get_viewport().get_visible_rect().size.x
+        var viewport_width: float = maxf(get_viewport().get_visible_rect().size.x, 1.0)
+        var touch_x_ratio: float = event.position.x / viewport_width
         if touch_x_ratio >= look_side_start and touch_x_ratio <= look_side_end:
             _look(event.relative, touch_sensitivity * touch_sensitivity_multiplier)
     elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
