@@ -21,6 +21,21 @@ var _socket_ready := false
 var _request_id := 1
 var _pending_join := false
 
+func _ready() -> void:
+	_load_config()
+
+func _load_config() -> void:
+	var file := FileAccess.open("res://config/coop_server.json", FileAccess.READ)
+	if file == null:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	file.close()
+	if parsed is Dictionary:
+		server_host = str(parsed.get("host", server_host))
+		server_port = int(parsed.get("port", server_port))
+		server_key = str(parsed.get("server_key", server_key))
+		use_tls = str(parsed.get("scheme", "http")) == "https"
+
 func configure(host: String, port: int = 7350, api_key: String = "defaultkey", tls: bool = false) -> void:
 	server_host = host.strip_edges()
 	server_port = clampi(port, 1, 65535)
@@ -174,11 +189,13 @@ func _handle_socket_message(message: Dictionary) -> void:
 		_pending_join = false
 		connection_changed.emit(false, str(message.error.get("message", "Co-op server error.")))
 
-func _http_json(url: String, method: int, payload: Dictionary, headers: PackedStringArray) -> Dictionary:
+func _http_json(url: String, method: int, payload: Dictionary, headers: Array) -> Dictionary:
 	var request := HTTPRequest.new()
 	request.timeout = 15.0
 	add_child(request)
-	var all_headers := headers.duplicate()
+	var all_headers := PackedStringArray()
+	for header in headers:
+		all_headers.append(str(header))
 	all_headers.append("Content-Type: application/json")
 	var err := request.request(url, all_headers, method, JSON.stringify(payload))
 	if err != OK:
