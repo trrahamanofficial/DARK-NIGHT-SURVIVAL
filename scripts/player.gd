@@ -23,6 +23,8 @@ var look_pitch := 0.0
 var flashlight_on := true
 var is_dead := false
 var damage_cooldown := 0.0
+var mobile_move_vector := Vector2.ZERO
+var touch_sensitivity_multiplier := 1.0
 
 @onready var head: Node3D = $Head
 @onready var lamp: SpotLight3D = $Head/Camera3D/Flashlight
@@ -59,14 +61,20 @@ func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
         _look(event.relative, mouse_sensitivity)
     elif event is InputEventScreenDrag:
-        if event.position.x >= get_viewport().get_visible_rect().size.x * 0.42:
-            _look(event.relative, touch_sensitivity)
+        if event.position.x >= get_viewport().get_visible_rect().size.x * 0.48:
+            _look(event.relative, touch_sensitivity * touch_sensitivity_multiplier)
     elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
     elif event is InputEventKey and event.pressed and event.keycode == KEY_F:
         _toggle_flashlight()
     elif event is InputEventKey and event.pressed and event.keycode == KEY_H:
         use_medkit()
+
+func set_mobile_move_vector(value: Vector2) -> void:
+    mobile_move_vector = value.limit_length(1.0)
+
+func set_touch_sensitivity_multiplier(value: float) -> void:
+    touch_sensitivity_multiplier = clampf(value, 0.5, 2.0)
 
 func _look(delta_position: Vector2, sensitivity: float) -> void:
     rotate_y(-delta_position.x * sensitivity)
@@ -127,7 +135,9 @@ func _die() -> void:
 func _physics_process(delta: float) -> void:
     if is_dead or get_tree().paused:
         return
-    var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+    var input_dir := mobile_move_vector
+    if input_dir.length() < 0.05:
+        input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
     var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
     var can_run := Input.is_action_pressed("run") and stamina > 0.5
     var speed := run_speed if can_run else walk_speed
