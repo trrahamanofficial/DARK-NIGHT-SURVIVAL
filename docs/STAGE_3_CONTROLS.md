@@ -1,14 +1,17 @@
 # Stage 3 — Player Controls
 
-## Implemented in the current development pass
-- Replaced the four directional touch buttons with an analog virtual joystick.
-- Kept independent right-side swipe camera look; the look region moves to the opposite half when touch controls are swapped.
-- Retained touch actions for Run, Flashlight, and Heal.
-- Added saved settings for touch-control size, opacity, side swapping, and camera-look sensitivity.
-- Kept desktop WASD movement, Shift sprint, mouse-look, F flashlight, H medkit, and Escape pause behavior.
+## Implemented in the current source
+- Analog virtual joystick for mobile movement.
+- Independent swipe camera look on the opposite side of the joystick.
+- Mobile Run, Flashlight, and Heal controls.
+- Touch-control size, opacity, side swapping, and camera sensitivity settings.
+- New Arrange Touch Controls mode: enable it in Settings, drag the joystick/action buttons, then turn it off. Positions are saved locally as normalized screen coordinates.
+- Responsive default control placement uses normalized viewport positions, so controls adapt to different screen sizes.
+- PC key remapping for forward, back, left, right, run, and flashlight. Tap an action in Settings and press the replacement key; Escape cancels.
+- Settings and custom key bindings persist locally in user://dark_night_settings.cfg.
+- Existing desktop mouse-look, pause, health, stamina, and medkit actions remain.
 
-## Not yet certified
-- Real Android multi-touch behavior and control comfort have not yet been tested on a physical phone.
-- Landscape/portrait and very small-screen layout checks remain.
-- Free-form drag-to-reposition and user-remappable PC keys remain future refinements.
-- Stage 3 is not complete until Android and Web exports pass and QA gaps are addressed.
+## Verification still required
+- Android and Web export workflows must pass against this exact source revision.
+- Physical Android testing is still required for multi-touch, dragging, rotation, and small-screen comfort. The assistant cannot certify real-device behavior from export builds alone.
+- PC keyboard remapping must be exercised in a running desktop build.
