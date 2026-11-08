@@ -361,7 +361,7 @@ func _make_mobile_controls(layer: CanvasLayer) -> void:
     joystick.add_to_group("touch_controls")
     joystick.set_meta("base_pos", joystick.position)
     joystick.set_meta("base_size", joystick.size)
-    joystick.vector_changed.connect(_on_mobile_move_changed)
+    joystick.connect("vector_changed", Callable(self, "_on_mobile_move_changed"))
     layer.add_child(joystick)
     var right_x := screen.x - 178.0
     var bottom_y := screen.y - 88.0
