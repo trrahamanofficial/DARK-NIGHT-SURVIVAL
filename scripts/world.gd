@@ -335,6 +335,16 @@ func _make_forest() -> void:
         _make_tree(Vector3(x, 0, z), rng.randf_range(0.75, 1.5))
 
 func _make_forest_details() -> void:
+    var trail := MeshInstance3D.new()
+    var trail_mesh := PlaneMesh.new()
+    trail_mesh.size = Vector2(5.6, 31.0)
+    trail.mesh = trail_mesh
+    trail.position = Vector3(0.0, 0.012, -10.0)
+    var trail_material := StandardMaterial3D.new()
+    trail_material.albedo_color = Color(0.045, 0.041, 0.032)
+    trail_material.roughness = 1.0
+    trail.material_override = trail_material
+    add_child(trail)
     var rng := RandomNumberGenerator.new()
     rng.seed = 20261109
     var rock_material := StandardMaterial3D.new()
