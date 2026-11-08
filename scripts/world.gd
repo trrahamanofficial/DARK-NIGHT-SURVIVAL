@@ -293,7 +293,17 @@ func _setup_environment() -> void:
 
 func _is_main_trail(x: float, z: float, half_width: float) -> bool:
     # Keep the route from the spawn clearing toward the first encounter free of procedural obstacles.
-    return absf(x) < half_width and z > -25.0 and z < 5.0
+    return absf(x) < half_width and z > -45.0 and z < 5.0
+
+func _is_story_clear_zone(x: float, z: float, radius: float) -> bool:
+    var locations := [
+        Vector2(0.0, -29.0), Vector2(8.0, -33.0), Vector2(-9.0, -35.0),
+        Vector2(1.0, -40.0), Vector2(-26.0, -38.0), Vector2(27.0, -40.0)
+    ]
+    for location in locations:
+        if Vector2(x, z).distance_to(location) < radius:
+            return true
+    return false
 
 func _start_forest_ambience() -> void:
     # Generate a lightweight seamless offline ambience loop; no external audio files are required.
@@ -351,16 +361,16 @@ func _make_forest() -> void:
     for i in range(85):
         var x := rng.randf_range(-42, 42)
         var z := rng.randf_range(-42, 42)
-        if Vector2(x, z).length() < 5.5 or _is_main_trail(x, z, 2.8):
+        if Vector2(x, z).length() < 5.5 or _is_main_trail(x, z, 2.8) or _is_story_clear_zone(x, z, 5.0):
             continue
         _make_tree(Vector3(x, 0, z), rng.randf_range(0.75, 1.5))
 
 func _make_forest_details() -> void:
     var trail := MeshInstance3D.new()
     var trail_mesh := PlaneMesh.new()
-    trail_mesh.size = Vector2(5.6, 31.0)
+    trail_mesh.size = Vector2(5.6, 46.0)
     trail.mesh = trail_mesh
-    trail.position = Vector3(0.0, 0.012, -10.0)
+    trail.position = Vector3(0.0, 0.012, -18.0)
     var trail_material := StandardMaterial3D.new()
     trail_material.albedo_color = Color(0.045, 0.041, 0.032)
     trail_material.roughness = 1.0
@@ -377,7 +387,7 @@ func _make_forest_details() -> void:
     for i in range(70):
         var x := rng.randf_range(-43.0, 43.0)
         var z := rng.randf_range(-43.0, 43.0)
-        if Vector2(x, z).length() < 4.5 or _is_main_trail(x, z, 2.2):
+        if Vector2(x, z).length() < 4.5 or _is_main_trail(x, z, 2.2) or _is_story_clear_zone(x, z, 4.0):
             continue
         if rng.randf() < 0.58:
             var rock := MeshInstance3D.new()
@@ -404,7 +414,7 @@ func _make_forest_details() -> void:
     for i in range(12):
         var x := rng.randf_range(-38.0, 38.0)
         var z := rng.randf_range(-38.0, 38.0)
-        if Vector2(x, z).length() < 7.0 or _is_main_trail(x, z, 3.0):
+        if Vector2(x, z).length() < 7.0 or _is_main_trail(x, z, 3.0) or _is_story_clear_zone(x, z, 4.0):
             continue
         var stump := MeshInstance3D.new()
         var stump_mesh := CylinderMesh.new()
