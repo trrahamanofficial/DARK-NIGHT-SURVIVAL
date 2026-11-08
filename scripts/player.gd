@@ -3,6 +3,7 @@ extends CharacterBody3D
 signal health_changed(current: float, maximum: float)
 signal stamina_changed(current: float, maximum: float)
 signal inventory_changed(medkit_count: int)
+signal resources_changed(resources: Dictionary)
 signal player_died
 
 @export var walk_speed := 4.2
@@ -19,6 +20,7 @@ signal player_died
 var health := 100.0
 var stamina := 100.0
 var medkits := 0
+var resources: Dictionary = {"cloth": 0, "herb": 0, "scrap": 0, "food": 0, "water": 0}
 var look_pitch := 0.0
 var flashlight_on := true
 var is_dead := false
@@ -36,6 +38,7 @@ func _ready() -> void:
     health_changed.emit(health, max_health)
     stamina_changed.emit(stamina, max_stamina)
     inventory_changed.emit(medkits)
+    resources_changed.emit(resources.duplicate(true))
     if not OS.has_feature("mobile"):
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
@@ -125,6 +128,49 @@ func use_medkit() -> void:
     medkits -= 1
     heal(medkit_heal_amount)
     inventory_changed.emit(medkits)
+
+
+func add_resource(item: String, amount: int = 1) -> void:
+    if is_dead or amount <= 0 or not resources.has(item):
+        return
+    resources[item] = int(resources[item]) + amount
+    resources_changed.emit(resources.duplicate(true))
+
+func craft_item(recipe: String) -> bool:
+    if is_dead:
+        return false
+    match recipe:
+        "medkit":
+            if int(resources.cloth) < 2 or int(resources.herb) < 2:
+                return false
+            resources.cloth -= 2
+            resources.herb -= 2
+            medkits += 1
+            inventory_changed.emit(medkits)
+        "bandage":
+            if int(resources.cloth) < 1 or int(resources.herb) < 1:
+                return false
+            resources.cloth -= 1
+            resources.herb -= 1
+            heal(20.0)
+        _:
+            return false
+    resources_changed.emit(resources.duplicate(true))
+    return true
+
+func consume_item(item: String) -> bool:
+    if is_dead:
+        return false
+    if item == "food" and int(resources.food) > 0:
+        resources.food -= 1
+        restore_stamina(35.0)
+    elif item == "water" and int(resources.water) > 0:
+        resources.water -= 1
+        restore_stamina(20.0)
+    else:
+        return false
+    resources_changed.emit(resources.duplicate(true))
+    return true
 
 func _die() -> void:
     if is_dead:
