@@ -7,6 +7,7 @@ on:
     paths:
       - "project.godot"
       - "export_presets.cfg"
+      - "config/**"
       - "scenes/**"
       - "scripts/**"
       - ".github/workflows/build-android.yml"
@@ -20,13 +21,11 @@ jobs:
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
-
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
       - name: Install Android SDK components
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
@@ -35,13 +34,11 @@ jobs:
           if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"; fi
           yes | "$SDKMANAGER" --licenses
           "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-
       - name: Download Godot 4.7.2
         run: |
           wget -q https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip -O godot.zip
           unzip -q godot.zip
           chmod +x Godot_v4.7.2-stable_linux.x86_64
-
       - name: Install matching export templates
         run: |
           mkdir -p "$HOME/.local/share/godot/export_templates/4.7.2.stable"
@@ -51,7 +48,6 @@ jobs:
             mv "$HOME/.local/share/godot/export_templates/4.7.2.stable/templates/"* "$HOME/.local/share/godot/export_templates/4.7.2.stable/"
             rmdir "$HOME/.local/share/godot/export_templates/4.7.2.stable/templates"
           fi
-
       - name: Configure Android paths and debug signing
         run: |
           mkdir -p "$HOME/.config/godot" "$HOME/.android" build/android
@@ -65,15 +61,12 @@ jobs:
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           EOF
-
       - name: Import project resources
         run: ./Godot_v4.7.2-stable_linux.x86_64 --headless --path . --editor --quit
-
       - name: Install Android build template and export APK
         run: |
           ./Godot_v4.7.2-stable_linux.x86_64 --headless --path . --install-android-build-template --export-debug "Android" build/android/DARK-NIGHT-SURVIVAL.apk
           test -s build/android/DARK-NIGHT-SURVIVAL.apk
-
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
