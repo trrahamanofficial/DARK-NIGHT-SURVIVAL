@@ -28,3 +28,10 @@ Use Nakama with PostgreSQL for dedicated authoritative sessions. Offline single-
 
 ## Release gate
 Co-op remains Coming Soon and cannot be advertised as playable until client gameplay integration, dedicated server deployment, security review and multi-device QA pass.
+
+
+## Additional in-game integration pass
+- Added a pause-menu Co-op Multiplayer panel with connect, create-session, join-by-Match-ID and disconnect actions.
+- The world now sends local movement intents while a match is active and renders remote survivor placeholders from authoritative state broadcasts; departed peers are cleaned up.
+- This is still an integration prototype: player spawn reconciliation, smooth interpolation, animation, lobby ready/invite flow, combat/monster authority and real server testing remain.
+- Latest Android, Windows and Web export workflows were triggered for source commit 88480a80d844178e086431a091b814b008f38b5b; results must be checked before marking builds green.
