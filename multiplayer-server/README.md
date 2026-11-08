@@ -4,19 +4,21 @@
 Selected architecture: Nakama + PostgreSQL with server-authoritative match state. Offline single-player remains independent of this service.
 
 ### Included
-- docker-compose.yml: Nakama 3.22.0 and PostgreSQL 16; credentials are supplied through environment variables and are never committed.
-- modules/dark_night_match.lua: match handler with a four-player cap, server-owned position/yaw state, bounded input intents, fixed 10 Hz simulation, state broadcasts, and host reassignment after disconnect.
-- Protocol identifiers: client input opcode 1; authoritative state opcode 2; protocol version 1.
+- Docker Compose stack: Nakama 3.22.0 and PostgreSQL 16.
+- `modules/dark_night_match.lua`: four-player authoritative match, bounded client movement intents, 10 Hz server state and host marker reassignment.
+- Authenticated RPC `create_coop_match` to create the registered match module.
+- Godot-side connection/authentication and realtime transport: `scripts/coop_client.gd`.
+- Client endpoint/protocol configuration: `config/coop_server.json`.
 
 ## Deployment outline
 1. Install Docker Engine and Docker Compose on a Linux server.
-2. Set strong unique NAKAMA_DB_PASSWORD and NAKAMA_SERVER_KEY environment variables outside source control.
-3. Keep ports private initially. Put a TLS reverse proxy in front before exposing clients.
-4. Run docker compose up -d and inspect logs/health before connecting a client.
-5. Never expose PostgreSQL or the Nakama administrative console publicly. Never place the server key in a game client.
+2. Set a strong private `NAKAMA_DB_PASSWORD`.
+3. Set `NAKAMA_SERVER_KEY` to the same client API key configured in `config/coop_server.json`. This API key is client-visible; it is not the database password.
+4. Keep PostgreSQL and Nakama's administrative console private. Put a TLS reverse proxy in front before exposing client endpoints.
+5. Run `docker compose up -d`, inspect logs, and verify the Lua runtime module and RPC registration.
 
 ## Important limitations
-This is a server foundation, not a playable online co-op release. No public server has been provisioned or deployed.
-Godot client authentication, lobby/create/join UI, reconnect/resume, replicated character presentation, authoritative combat/loot, matchmaking, abuse controls, TLS deployment and multi-client network tests remain.
-The current handler is a minimal authoritative movement-state prototype, not a complete anti-cheat system. It does not yet simulate monsters, weapons, health or inventory.
-Co-op must remain Coming Soon until all client/server integration and real multi-device tests pass.
+This is a multiplayer integration foundation, not a playable online co-op release. No public server has been provisioned or deployed.
+The in-game lobby/player presentation, invites/share codes, reconnect/resume, authoritative monsters/combat/health/loot, matchmaking, abuse controls, TLS deployment, backups and multi-client QA remain.
+The current handler is a minimal authoritative movement-state prototype, not a complete anti-cheat system.
+Co-op remains Coming Soon until client gameplay integration, server deployment, security review and 2–4 client gameplay tests pass.
