@@ -135,6 +135,8 @@ func _apply_control_settings() -> void:
     var player := get_tree().current_scene.get_node_or_null("Player") if get_tree().current_scene else null
     if player and player.has_method("set_touch_sensitivity_multiplier"):
         player.set_touch_sensitivity_multiplier(touch_sensitivity)
+    if player and player.has_method("set_touch_look_on_right"):
+        player.set_touch_look_on_right(not swapped)
 
 func _apply_quality() -> void:
     var selected := quality
