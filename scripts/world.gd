@@ -136,7 +136,7 @@ func _spawn_survival_wave() -> void:
     if player == null or player.is_dead:
         return
     var archetype := "stalker" if survival_wave % 3 == 0 else ("brute" if survival_wave % 3 == 2 else "wanderer")
-    var spawn_pos := player.global_position + Vector3(18.0, 0.1, 16.0)
+    var spawn_pos: Vector3 = player.global_position + Vector3(18.0, 0.1, 16.0)
     var enemy_name := "Wave_%d_Enemy_%d" % [survival_wave, get_tree().get_nodes_in_group("enemies").size() + 1]
     _spawn_monster(enemy_name, spawn_pos, archetype)
     if survival_wave_label != null:
