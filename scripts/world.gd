@@ -80,7 +80,7 @@ func _show_startup_diagnostic(message: String) -> void:
     shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     startup_layer.add_child(shade)
     startup_label = Label.new()
-    startup_label.text = "DARK NIGHT: SURVIVAL\\n" + message
+    startup_label.text = "DARK NIGHT: SURVIVAL\n" + message
     startup_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     startup_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
     startup_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -90,7 +90,7 @@ func _show_startup_diagnostic(message: String) -> void:
 
 func _set_startup_stage(message: String) -> void:
     if is_instance_valid(startup_label):
-        startup_label.text = "DARK NIGHT: SURVIVAL\\n" + message
+        startup_label.text = "DARK NIGHT: SURVIVAL\n" + message
 
 func _process(delta: float) -> void:
     if CoopClient.is_connected_to_server() and not CoopClient.current_match_id.is_empty():
