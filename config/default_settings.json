@@ -11,6 +11,7 @@
     "touch_sensitivity": 1,
     "touch_button_scale": 1,
     "touch_button_opacity": 0.8,
+    "touch_camera_sensitivity": 1,
     "swap_touch_sides": false,
     "show_subtitles": true,
     "language": "en"
