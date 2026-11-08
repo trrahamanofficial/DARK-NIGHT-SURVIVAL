@@ -639,9 +639,11 @@ func _make_hud() -> void:
     survival_wave_label.visible = ModeManager.current_mode == "survival"
     survival_wave_label.text = "SURVIVAL WAVE 1"
     layer.add_child(survival_wave_label)
-    StoryCampaign.campaign_updated.connect(_on_story_campaign_updated)
-    StoryCampaign.campaign_completed.connect(_on_story_campaign_completed)
-    _on_story_campaign_updated(StoryCampaign.get_mission_title(), StoryCampaign.get_objective_text(), StoryCampaign.get_progress_text())
+    story_label.visible = ModeManager.current_mode == "story_campaign"
+    if ModeManager.current_mode == "story_campaign":
+        StoryCampaign.campaign_updated.connect(_on_story_campaign_updated)
+        StoryCampaign.campaign_completed.connect(_on_story_campaign_completed)
+        _on_story_campaign_updated(StoryCampaign.get_mission_title(), StoryCampaign.get_objective_text(), StoryCampaign.get_progress_text())
     var crosshair := Label.new()
     crosshair.text = "+"
     crosshair.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
