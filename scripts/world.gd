@@ -7,6 +7,7 @@ var health_bar: ProgressBar
 var stamina_bar: ProgressBar
 var status_label: Label
 var medkit_count_label: Label
+var resources_label: Label
 var overlay_layer: CanvasLayer
 var is_game_over := false
 
@@ -18,6 +19,11 @@ func _ready() -> void:
     _spawn_monster()
     _spawn_medkit(Vector3(5.0, 0.0, -7.0))
     _spawn_medkit(Vector3(-8.0, 0.0, -15.0))
+    _spawn_resource_pickup(Vector3(8.0, 0.0, -11.0), "cloth", 2)
+    _spawn_resource_pickup(Vector3(-11.0, 0.0, -8.0), "herb", 2)
+    _spawn_resource_pickup(Vector3(13.0, 0.0, -19.0), "scrap", 2)
+    _spawn_resource_pickup(Vector3(-16.0, 0.0, -21.0), "food", 1)
+    _spawn_resource_pickup(Vector3(18.0, 0.0, -5.0), "water", 1)
     _make_hud()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -58,6 +64,52 @@ func _on_stamina_changed(current: float, maximum: float) -> void:
 func _on_inventory_changed(medkit_count: int) -> void:
     if medkit_count_label != null:
         medkit_count_label.text = "MEDKIT  x%d  |  H / HEAL" % medkit_count
+
+func _on_resources_changed(resources: Dictionary) -> void:
+    if resources_label != null:
+        resources_label.text = "CLOTH %d  HERB %d  SCRAP %d  FOOD %d  WATER %d" % [
+            int(resources.get("cloth", 0)), int(resources.get("herb", 0)),
+            int(resources.get("scrap", 0)), int(resources.get("food", 0)),
+            int(resources.get("water", 0))
+        ]
+
+func _on_resource_body_entered(body: Node3D, pickup: Area3D, item: String, amount: int) -> void:
+    if body.name != "Player" or not body.has_method("add_resource"):
+        return
+    body.add_resource(item, amount)
+    pickup.queue_free()
+
+func _spawn_resource_pickup(position_3d: Vector3, item: String, amount: int) -> void:
+    var pickup := Area3D.new()
+    pickup.name = "Pickup_" + item.capitalize()
+    pickup.position = position_3d + Vector3(0.0, 0.55, 0.0)
+    var colors := {
+        "cloth": Color(0.55, 0.62, 0.72), "herb": Color(0.18, 0.62, 0.24),
+        "scrap": Color(0.55, 0.48, 0.38), "food": Color(0.78, 0.48, 0.16),
+        "water": Color(0.12, 0.48, 0.82)
+    }
+    var mesh := MeshInstance3D.new()
+    var box := BoxMesh.new()
+    box.size = Vector3(0.55, 0.42, 0.55)
+    mesh.mesh = box
+    var material := StandardMaterial3D.new()
+    material.albedo_color = colors.get(item, Color.WHITE)
+    material.roughness = 0.8
+    mesh.material_override = material
+    pickup.add_child(mesh)
+    var label := Label3D.new()
+    label.text = item.to_upper() + " +" + str(amount)
+    label.font_size = 32
+    label.pixel_size = 0.006
+    label.position.y = 0.45
+    pickup.add_child(label)
+    var collision := CollisionShape3D.new()
+    var sphere := SphereShape3D.new()
+    sphere.radius = 1.2
+    collision.shape = sphere
+    pickup.add_child(collision)
+    pickup.body_entered.connect(_on_resource_body_entered.bind(pickup, item, amount))
+    add_child(pickup)
 
 func _on_medkit_body_entered(body: Node3D, pickup: Area3D) -> void:
     if body.name != "Player" or not body.has_method("add_medkit"):
@@ -150,6 +202,30 @@ func _show_overlay(heading: String, message: String, show_resume: bool) -> void:
         resume.process_mode = Node.PROCESS_MODE_ALWAYS
         resume.pressed.connect(toggle_pause)
         stack.add_child(resume)
+    var craft_medkit := Button.new()
+    craft_medkit.text = "CRAFT MEDKIT (2 CLOTH + 2 HERB)"
+    craft_medkit.custom_minimum_size.y = 42
+    craft_medkit.process_mode = Node.PROCESS_MODE_ALWAYS
+    craft_medkit.pressed.connect(_craft_medkit)
+    stack.add_child(craft_medkit)
+    var craft_bandage := Button.new()
+    craft_bandage.text = "CRAFT BANDAGE (1 CLOTH + 1 HERB)"
+    craft_bandage.custom_minimum_size.y = 42
+    craft_bandage.process_mode = Node.PROCESS_MODE_ALWAYS
+    craft_bandage.pressed.connect(_craft_bandage)
+    stack.add_child(craft_bandage)
+    var eat_button := Button.new()
+    eat_button.text = "USE FOOD"
+    eat_button.custom_minimum_size.y = 38
+    eat_button.process_mode = Node.PROCESS_MODE_ALWAYS
+    eat_button.pressed.connect(_consume_food)
+    stack.add_child(eat_button)
+    var drink_button := Button.new()
+    drink_button.text = "DRINK WATER"
+    drink_button.custom_minimum_size.y = 38
+    drink_button.process_mode = Node.PROCESS_MODE_ALWAYS
+    drink_button.pressed.connect(_consume_water)
+    stack.add_child(drink_button)
     var restart := Button.new()
     restart.text = "RESTART GAME"
     restart.custom_minimum_size.y = 44
@@ -345,6 +421,11 @@ func _make_hud() -> void:
     medkit_count_label.position = Vector2(20, 136)
     medkit_count_label.add_theme_font_size_override("font_size", 12)
     layer.add_child(medkit_count_label)
+    resources_label = Label.new()
+    resources_label.text = "CLOTH 0  HERB 0  SCRAP 0  FOOD 0  WATER 0"
+    resources_label.position = Vector2(20, 156)
+    resources_label.add_theme_font_size_override("font_size", 11)
+    layer.add_child(resources_label)
     var crosshair := Label.new()
     crosshair.text = "+"
     crosshair.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -357,6 +438,7 @@ func _make_hud() -> void:
         player.health_changed.connect(_on_health_changed)
         player.stamina_changed.connect(_on_stamina_changed)
         player.inventory_changed.connect(_on_inventory_changed)
+        player.resources_changed.connect(_on_resources_changed)
         player.player_died.connect(_on_player_died)
     var settings_layer := CanvasLayer.new()
     settings_layer.set_script(preload("res://scripts/settings_ui.gd"))
@@ -460,6 +542,27 @@ func apply_graphics_quality(level: String) -> void:
         if lamp:
             lamp.shadow_enabled = level in ["High", "Ultra"]
 
+
+func _craft_medkit() -> void:
+    var player := get_node_or_null("Player")
+    if player != null:
+        player.craft_item("medkit")
+
+func _craft_bandage() -> void:
+    var player := get_node_or_null("Player")
+    if player != null:
+        player.craft_item("bandage")
+
+func _consume_food() -> void:
+    var player := get_node_or_null("Player")
+    if player != null:
+        player.consume_item("food")
+
+func _consume_water() -> void:
+    var player := get_node_or_null("Player")
+    if player != null:
+        player.consume_item("water")
+
 func _use_player_medkit() -> void:
     var player := get_node_or_null("Player")
     if player != null and player.has_method("use_medkit"):
@@ -494,6 +597,7 @@ func _save_game() -> void:
         "health": float(player.health),
         "stamina": float(player.stamina),
         "medkits": int(player.medkits),
+        "resources": player.resources.duplicate(true),
         "flashlight_on": bool(player.flashlight_on),
         "monster_position": _vector3_to_array(monster.position) if monster else [],
         "medkit_pickups": pickup_positions
@@ -527,6 +631,10 @@ func _load_game() -> void:
     player.health = clampf(float(payload.get("health", 100.0)), 0.0, player.max_health)
     player.stamina = clampf(float(payload.get("stamina", 100.0)), 0.0, player.max_stamina)
     player.medkits = maxi(0, int(payload.get("medkits", 0)))
+    var saved_resources: Variant = payload.get("resources", {})
+    if typeof(saved_resources) == TYPE_DICTIONARY:
+        for item in player.resources.keys():
+            player.resources[item] = maxi(0, int(saved_resources.get(item, 0)))
     player.is_dead = player.health <= 0.0
     player.flashlight_on = bool(payload.get("flashlight_on", true))
     player.lamp.visible = player.flashlight_on
@@ -534,6 +642,7 @@ func _load_game() -> void:
     player.health_changed.emit(player.health, player.max_health)
     player.stamina_changed.emit(player.stamina, player.max_stamina)
     player.inventory_changed.emit(player.medkits)
+    player.resources_changed.emit(player.resources.duplicate(true))
     var monster := get_node_or_null("Wanderer")
     if monster and payload.has("monster_position"):
         monster.position = _array_to_vector3(payload.get("monster_position", []), monster.position)
