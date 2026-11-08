@@ -46,7 +46,7 @@ func configure_archetype(kind: String) -> void:
             attack_distance = 1.55
             attack_damage = 9.0
             attack_interval = 1.1
-            retreat_health_ratio = 0.0
+            retreat_health_ratio = 0.22
         "brute":
             max_health = 160.0
             wander_speed = 0.8
@@ -111,12 +111,16 @@ func _physics_process(delta: float) -> void:
                 attack_timer = attack_interval
                 state = AIState.CHASE
         AIState.RETREAT:
-            var away := global_position - player.global_position
-            away.y = 0.0
-            if away.length() > 0.01:
-                _move_toward_point(global_position + away.normalized() * 12.0, chase_speed, delta)
+            if distance_to_player > notice_distance * 1.5:
+                state = AIState.PATROL
+                _choose_target()
             else:
-                _stop_horizontal(delta)
+                var away := global_position - player.global_position
+                away.y = 0.0
+                if away.length() > 0.01:
+                    _move_toward_point(global_position + away.normalized() * 12.0, chase_speed, delta)
+                else:
+                    _stop_horizontal(delta)
         AIState.INVESTIGATE:
             _move_toward_point(target_point, wander_speed * 1.25, delta)
         AIState.PATROL:
