@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "game_title": "DARK NIGHT: SURVIVAL",
+  "modes": [
+    {
+      "id": "story_campaign",
+      "name": "Story Campaign",
+      "players": "1",
+      "online_required": false,
+      "description": "Story missions, objectives and escape progression."
+    },
+    {
+      "id": "survival",
+      "name": "Survival Mode",
+      "players": "1",
+      "online_required": false,
+      "description": "Survive escalating threats and manage resources."
+    },
+    {
+      "id": "free_explore",
+      "name": "Free Explore",
+      "players": "1",
+      "online_required": false,
+      "description": "Explore maps without mission pressure."
+    },
+    {
+      "id": "coop",
+      "name": "Co-op Mode",
+      "players": "1-4",
+      "online_required": true,
+      "description": "Online cooperative play; requires an authoritative multiplayer server."
+    },
+    {
+      "id": "nightmare",
+      "name": "Nightmare Mode",
+      "players": "1",
+      "online_required": false,
+      "description": "High-risk survival challenge with stronger threats."
+    },
+    {
+      "id": "custom",
+      "name": "Custom Mode",
+      "players": "1",
+      "online_required": false,
+      "description": "Player-configured gameplay rules."
+    }
+  ],
+  "default_mode": "story_campaign",
+  "implementation_status": "configuration_only"
+}
