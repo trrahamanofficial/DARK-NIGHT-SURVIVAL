@@ -25,6 +25,7 @@ var is_dead := false
 var damage_cooldown := 0.0
 var mobile_move_vector := Vector2.ZERO
 var touch_sensitivity_multiplier := 1.0
+var touch_look_on_right := true
 
 @onready var head: Node3D = $Head
 @onready var lamp: SpotLight3D = $Head/Camera3D/Flashlight
@@ -61,7 +62,10 @@ func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
         _look(event.relative, mouse_sensitivity)
     elif event is InputEventScreenDrag:
-        if event.position.x >= get_viewport().get_visible_rect().size.x * 0.48:
+        var look_side_start := 0.52 if touch_look_on_right else 0.0
+        var look_side_end := 1.0 if touch_look_on_right else 0.48
+        var touch_x_ratio := event.position.x / get_viewport().get_visible_rect().size.x
+        if touch_x_ratio >= look_side_start and touch_x_ratio <= look_side_end:
             _look(event.relative, touch_sensitivity * touch_sensitivity_multiplier)
     elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -75,6 +79,9 @@ func set_mobile_move_vector(value: Vector2) -> void:
 
 func set_touch_sensitivity_multiplier(value: float) -> void:
     touch_sensitivity_multiplier = clampf(value, 0.5, 2.0)
+
+func set_touch_look_on_right(value: bool) -> void:
+    touch_look_on_right = value
 
 func _look(delta_position: Vector2, sensitivity: float) -> void:
     rotate_y(-delta_position.x * sensitivity)
