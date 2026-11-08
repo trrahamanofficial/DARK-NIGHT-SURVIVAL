@@ -890,8 +890,8 @@ func _make_hospital_map() -> void:
     _add_map_block("HospitalOuterWest", Vector3(-21, 2.0, -8), Vector3(1, 4, 40), Color(0.19, 0.22, 0.25))
     _add_map_block("HospitalOuterEast", Vector3(21, 2.0, -8), Vector3(1, 4, 40), Color(0.19, 0.22, 0.25))
     for z in [-20.0, -8.0, 4.0]:
-        _add_map_block("HospitalRoomDivider", Vector3(-10, 1.8, z), Vector3(20, 3.6, 0.45), Color(0.28, 0.30, 0.31))
-        _add_map_block("HospitalRoomDivider", Vector3(10, 1.8, z), Vector3(20, 3.6, 0.45), Color(0.28, 0.30, 0.31))
+        _add_map_block("HospitalRoomDivider", Vector3(-14, 1.8, z), Vector3(14, 3.6, 0.45), Color(0.28, 0.30, 0.31))
+        _add_map_block("HospitalRoomDivider", Vector3(14, 1.8, z), Vector3(14, 3.6, 0.45), Color(0.28, 0.30, 0.31))
     for x in [-15.0, 15.0]:
         for z in [-23.0, -11.0, 1.0, 9.0]:
             _add_map_block("HospitalBed", Vector3(x, 0.55, z), Vector3(3.2, 0.45, 1.5), Color(0.42, 0.48, 0.51), false)
@@ -921,8 +921,8 @@ func _make_bunker_map() -> void:
     _add_map_block("BunkerNorthWall", Vector3(0, 2.0, -46), Vector3(18, 4, 0.8), wall_color)
     _add_map_block("BunkerSouthWall", Vector3(0, 2.0, 30), Vector3(18, 4, 0.8), wall_color)
     for z in [-34.0, -20.0, -6.0, 8.0, 22.0]:
-        _add_map_block("BunkerSidePartition", Vector3(-4.0, 1.8, z), Vector3(8, 3.6, 0.5), wall_color)
-        _add_map_block("BunkerSidePartition", Vector3(4.0, 1.8, z), Vector3(8, 3.6, 0.5), wall_color)
+        _add_map_block("BunkerSidePartition", Vector3(-5.8, 1.8, z), Vector3(4.4, 3.6, 0.5), wall_color)
+        _add_map_block("BunkerSidePartition", Vector3(5.8, 1.8, z), Vector3(4.4, 3.6, 0.5), wall_color)
         _add_map_light(Vector3(0, 3.3, z), Color(0.42, 0.78, 0.72), 0.72, 11.0)
     for z in [-39.0, -25.0, -11.0, 3.0, 17.0]:
         _add_map_block("BunkerCrate", Vector3(-5.8, 0.8, z), Vector3(2.2, 1.6, 2.2), Color(0.20, 0.24, 0.21), false)
