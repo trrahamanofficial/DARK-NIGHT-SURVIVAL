@@ -1,0 +1,15 @@
+{
+  "items": {
+    "cloth": {"type": "material", "stackable": true},
+    "herb": {"type": "material", "stackable": true},
+    "scrap": {"type": "material", "stackable": true},
+    "food": {"type": "consumable", "effect": "restore_stamina", "amount": 35},
+    "water": {"type": "consumable", "effect": "restore_stamina", "amount": 20},
+    "medkit": {"type": "healing", "effect": "restore_health", "amount": 40},
+    "bandage": {"type": "healing", "effect": "restore_health", "amount": 20}
+  },
+  "recipes": {
+    "medkit": {"ingredients": {"cloth": 2, "herb": 2}, "output": {"medkit": 1}},
+    "bandage": {"ingredients": {"cloth": 1, "herb": 1}, "output": {"bandage": 1}}
+  }
+}
