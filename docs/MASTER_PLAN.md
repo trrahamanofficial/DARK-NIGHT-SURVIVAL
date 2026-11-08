@@ -31,6 +31,12 @@ This repository is being developed in staged increments. A successful Android ex
 14. **QA and optimization:** Android device tests, PC/Web tests, offline tests, performance and crash fixes.
 15. **Release packaging:** signed release APK process, Windows/Web packages, documentation and final verification.
 
+## Current stage status (2026-11-08)
+- Stage 1: foundation and export baseline implemented; export builds passed.
+- Stage 2: core gameplay loop implemented; Android/Web export builds passed; runtime gameplay QA remains.
+- Stage 3: mobile and desktop controls implemented; Android/Web export builds passed; Android device QA remains. PC device QA is not required for this mobile-only owner workflow and remains a later platform QA item.
+- Stage 4: local settings persistence and versioned offline save/load implemented; Android/Web export verification and real-device save/reload QA remain.
+
 ## Release checklist
 - [ ] All six modes are playable or explicitly marked unavailable in the UI.
 - [ ] Difficulty selection changes actual gameplay.
