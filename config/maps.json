@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "maps": [
+    {
+      "id": "forest",
+      "name": "Dark Forest",
+      "status": "existing",
+      "environment": "Fog, moonlight, trees, procedural ambience"
+    },
+    {
+      "id": "hospital",
+      "name": "Abandoned Hospital",
+      "status": "first-pass",
+      "environment": "Wards, room dividers, beds, reception, cold medical lighting"
+    },
+    {
+      "id": "village",
+      "name": "Old Village",
+      "status": "first-pass",
+      "environment": "Abandoned huts, village square, well, church and warm lantern lighting"
+    },
+    {
+      "id": "bunker",
+      "name": "Underground Bunker",
+      "status": "first-pass",
+      "environment": "Reinforced corridors, partitions, crates, consoles and emergency lighting"
+    }
+  ],
+  "selection": {
+    "inGamePauseMenu": true,
+    "persistSelectionOffline": true
+  }
+}
