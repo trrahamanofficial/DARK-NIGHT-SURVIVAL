@@ -54,12 +54,10 @@ func authenticate_and_connect(display_name: String) -> bool:
 		username = "Survivor"
 	var device_id := _get_device_id()
 	var scheme := "https" if use_tls else "http"
-	var url := "%s://%s:%d/v2/account/authenticate/device?create=true&username=%s" % [
-		scheme, server_host, server_port, username.uri_encode()
+	var url := "%s://%s:%d/v2/account/authenticate/device?http_key=%s&create=true&username=%s" % [
+		scheme, server_host, server_port, server_key.uri_encode(), username.uri_encode()
 	]
-	var auth := await _http_json(url, HTTPClient.METHOD_POST, {"id": device_id}, [
-		"Authorization: Basic " + Marshalls.utf8_to_base64(server_key + ":")
-	])
+	var auth := await _http_json(url, HTTPClient.METHOD_POST, {"id": device_id}, [])
 	if not auth.has("token"):
 		connection_changed.emit(false, str(auth.get("error", "Authentication failed.")))
 		return false
@@ -78,6 +76,7 @@ func authenticate_and_connect(display_name: String) -> bool:
 		_socket.poll()
 		await get_tree().create_timer(0.1).timeout
 	if not is_connected_to_server():
+		_socket.close()
 		connection_changed.emit(false, "Co-op server connection timed out.")
 		return false
 	_socket_ready = true
