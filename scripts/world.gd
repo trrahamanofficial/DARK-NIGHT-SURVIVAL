@@ -903,6 +903,41 @@ func _on_story_campaign_completed() -> void:
         story_label.text = "CAMPAIGN COMPLETE\nYou escaped the Dark Forest."
 
 func _show_story_message(heading: String, message: String) -> void:
-    _show_overlay(heading, message, true)
+    if overlay_layer != null:
+        overlay_layer.queue_free()
+    overlay_layer = CanvasLayer.new()
+    overlay_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+    overlay_layer.layer = 25
+    add_child(overlay_layer)
+    var shade := ColorRect.new()
+    shade.color = Color(0.004, 0.008, 0.018, 0.9)
+    shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    overlay_layer.add_child(shade)
+    var panel := PanelContainer.new()
+    panel.process_mode = Node.PROCESS_MODE_ALWAYS
+    panel.custom_minimum_size = Vector2(320, 190)
+    panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+    panel.position = Vector2(-160, -95)
+    overlay_layer.add_child(panel)
+    var stack := VBoxContainer.new()
+    stack.alignment = BoxContainer.ALIGNMENT_CENTER
+    stack.add_theme_constant_override("separation", 16)
+    panel.add_child(stack)
+    var title := Label.new()
+    title.text = heading
+    title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    title.add_theme_font_size_override("font_size", 24)
+    stack.add_child(title)
+    var detail := Label.new()
+    detail.text = message
+    detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    stack.add_child(detail)
+    var continue_button := Button.new()
+    continue_button.text = "CONTINUE"
+    continue_button.custom_minimum_size.y = 44
+    continue_button.process_mode = Node.PROCESS_MODE_ALWAYS
+    continue_button.pressed.connect(_close_overlay)
+    stack.add_child(continue_button)
     get_tree().paused = true
 
