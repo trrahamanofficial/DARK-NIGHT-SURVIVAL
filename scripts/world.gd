@@ -82,7 +82,10 @@ func _on_resource_body_entered(body: Node3D, pickup: Area3D, item: String, amoun
 func _spawn_resource_pickup(position_3d: Vector3, item: String, amount: int) -> void:
     var pickup := Area3D.new()
     pickup.name = "Pickup_" + item.capitalize()
+    pickup.add_to_group("save_resource_pickups")
     pickup.position = position_3d + Vector3(0.0, 0.55, 0.0)
+    pickup.set_meta("item", item)
+    pickup.set_meta("amount", amount)
     var colors := {
         "cloth": Color(0.55, 0.62, 0.72), "herb": Color(0.18, 0.62, 0.24),
         "scrap": Color(0.55, 0.48, 0.38), "food": Color(0.78, 0.48, 0.16),
@@ -589,6 +592,14 @@ func _save_game() -> void:
     for pickup in get_tree().get_nodes_in_group("save_pickups"):
         if is_instance_valid(pickup):
             pickup_positions.append(_vector3_to_array(pickup.position))
+    var resource_pickups: Array = []
+    for pickup in get_tree().get_nodes_in_group("save_resource_pickups"):
+        if is_instance_valid(pickup):
+            resource_pickups.append({
+                "position": _vector3_to_array(pickup.position),
+                "item": str(pickup.get_meta("item")),
+                "amount": int(pickup.get_meta("amount"))
+            })
     var monster := get_node_or_null("Wanderer")
     var payload := {
         "player_position": _vector3_to_array(player.position),
@@ -600,7 +611,8 @@ func _save_game() -> void:
         "resources": player.resources.duplicate(true),
         "flashlight_on": bool(player.flashlight_on),
         "monster_position": _vector3_to_array(monster.position) if monster else [],
-        "medkit_pickups": pickup_positions
+        "medkit_pickups": pickup_positions,
+        "resource_pickups": resource_pickups
     }
     var saved := SaveManager.save_slot(1, payload)
     if saved:
@@ -653,5 +665,15 @@ func _load_game() -> void:
     for saved_position in payload.get("medkit_pickups", []):
         var position_3d := _array_to_vector3(saved_position)
         _spawn_medkit(position_3d - Vector3(0.0, 0.55, 0.0))
+    for pickup in get_tree().get_nodes_in_group("save_resource_pickups"):
+        if is_instance_valid(pickup):
+            pickup.queue_free()
+    for saved_pickup in payload.get("resource_pickups", []):
+        if typeof(saved_pickup) == TYPE_DICTIONARY:
+            var resource_position := _array_to_vector3(saved_pickup.get("position", []))
+            var resource_item := str(saved_pickup.get("item", ""))
+            var resource_amount := maxi(1, int(saved_pickup.get("amount", 1)))
+            if player.resources.has(resource_item):
+                _spawn_resource_pickup(resource_position - Vector3(0.0, 0.55, 0.0), resource_item, resource_amount)
     if player.is_dead:
         _on_player_died()
