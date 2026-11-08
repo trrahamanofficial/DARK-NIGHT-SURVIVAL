@@ -55,4 +55,4 @@ This repository is being developed in staged increments. A successful Android ex
 ## Current baseline
 The current playable content is an early procedural Dark Forest prototype. Existing settings UI and touch controls are an early implementation, not final QA-approved systems. Configuration files added in Stage 1 are design data until connected to gameplay code in later stages.
 
-- Stage 7: first enemy AI pass implemented (patrol/investigate/chase/attack/retreat states, line-of-sight and sprint-noise detection, attack wind-up/cooldown, enemy health/death API, Wanderer and Stalker archetypes, and save persistence for enemy positions). Player weapons/hit detection, Brute spawn, navigation/obstacle avoidance, animations/audio and runtime QA remain.
+- Stage 7: first enemy AI pass implemented (patrol/investigate/chase/attack/retreat states, line-of-sight and sprint-noise detection, attack wind-up/cooldown, enemy health/death API, Wanderer, Stalker and Brute archetypes, and save persistence for enemy positions). Player weapons/hit detection, Brute spawn, navigation/obstacle avoidance, animations/audio and runtime QA remain.
