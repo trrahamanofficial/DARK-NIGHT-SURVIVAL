@@ -43,9 +43,9 @@
       "name": "Custom Mode",
       "players": "1",
       "online_required": false,
-      "description": "Player-configured gameplay rules."
+      "description": "Adjust enemy threat and resource amounts with saved custom sliders."
     }
   ],
   "default_mode": "story_campaign",
-  "implementation_status": "first_playable_pass"
+  "implementation_status": "feature_complete_pending_runtime_qa"
 }
