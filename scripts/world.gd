@@ -244,6 +244,22 @@ func _show_overlay(heading: String, message: String, show_resume: bool) -> void:
     stack.add_child(restart)
 
 func _restart_game() -> void:
+    if is_game_over:
+        var player := get_node_or_null("Player")
+        if player != null:
+            get_tree().paused = false
+            is_game_over = false
+            player.is_dead = false
+            player.position = StoryCampaign.checkpoint_position
+            player.health = minf(player.max_health, StoryCampaign.checkpoint_health)
+            player.stamina = player.max_stamina
+            player.velocity = Vector3.ZERO
+            player.health_changed.emit(player.health, player.max_health)
+            player.stamina_changed.emit(player.stamina, player.max_stamina)
+            if overlay_layer != null:
+                overlay_layer.queue_free()
+                overlay_layer = null
+            return
     get_tree().paused = false
     get_tree().reload_current_scene()
 
