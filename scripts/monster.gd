@@ -34,6 +34,18 @@ func _ready() -> void:
     health = max_health
     _choose_target()
 
+func _apply_mode_tuning() -> void:
+    var player_health := 100.0
+    var player_node := get_tree().current_scene.get_node_or_null("Player") if get_tree().current_scene else null
+    if player_node != null:
+        player_health = float(player_node.health)
+    max_health *= ModeManager.get_enemy_health_multiplier()
+    health = max_health
+    attack_damage *= ModeManager.get_enemy_damage_multiplier(player_health)
+    var detection_multiplier := ModeManager.get_enemy_detection_multiplier()
+    notice_distance *= detection_multiplier
+    hearing_distance *= detection_multiplier
+
 func configure_archetype(kind: String) -> void:
     archetype = kind
     match archetype:
