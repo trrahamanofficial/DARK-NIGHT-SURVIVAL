@@ -51,6 +51,8 @@ func complete_objective(objective_id: String) -> bool:
         objective_count += 1
     else:
         objective_count = 1
+        if not completed_objectives.has(objective_id):
+            completed_objectives.append(objective_id)
     var target := int(get_current_mission().get("target", 1))
     if objective_count >= target:
         mission_index += 1
