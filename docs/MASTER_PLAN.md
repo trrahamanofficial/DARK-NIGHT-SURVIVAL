@@ -37,7 +37,7 @@ This repository is being developed in staged increments. A successful Android ex
 - Stage 3: mobile and desktop controls implemented; Android/Web export builds passed; Android device QA remains. PC device QA is not required for this mobile-only owner workflow and remains a later platform QA item.
 - Stage 4: local settings persistence and versioned offline save/load implemented; Android/Web export verification and real-device save/reload QA remain.
 - Stage 5: initial survival loop implemented (resource pickups, inventory, crafting, food/water stamina recovery, save persistence); export verification and runtime gameplay QA remain.
-- Stage 6: initial forest atmosphere pass implemented (procedural terrain details, night fog and moonlight tuning); ambient audio, navigation validation, optimization and runtime QA remain.
+- Stage 6: forest environment pass implemented (procedural terrain details, night fog and moonlight, visible cleared trail corridor, and generated offline wind/night-insect ambience). A full navigation mesh, real-device audio/performance tuning and runtime QA remain; the newest ambience/trail changes need fresh Android/Web export verification.
 
 ## Release checklist
 - [ ] All six modes are playable or explicitly marked unavailable in the UI.
