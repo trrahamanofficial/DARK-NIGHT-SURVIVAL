@@ -11,6 +11,9 @@ func _ready() -> void:
     _spawn_monster()
     _make_hud()
 
+var game_environment: Environment
+var moon_light: DirectionalLight3D
+
 func _setup_environment() -> void:
     var env := Environment.new()
     env.background_mode = Environment.BG_SKY
@@ -21,10 +24,12 @@ func _setup_environment() -> void:
     env.fog_enabled = true
     env.fog_light_color = Color(0.025, 0.035, 0.045)
     env.fog_density = 0.035
+    game_environment = env
     var world_env := WorldEnvironment.new()
     world_env.environment = env
     add_child(world_env)
     var moon := DirectionalLight3D.new()
+    moon_light = moon
     moon.rotation_degrees = Vector3(-48, -28, 0)
     moon.light_color = Color(0.38, 0.48, 0.62)
     moon.light_energy = 0.16
@@ -168,6 +173,9 @@ func _make_hud() -> void:
     crosshair.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0, 0.7))
     layer.add_child(crosshair)
     add_child(layer)
+    var settings_layer := CanvasLayer.new()
+    settings_layer.set_script(preload("res://scripts/settings_ui.gd"))
+    add_child(settings_layer)
     if OS.has_feature("mobile") or DisplayServer.is_touchscreen_available():
         _make_mobile_controls(layer)
 
@@ -183,6 +191,9 @@ func _make_mobile_controls(layer: CanvasLayer) -> void:
     _add_hold_button(layer, "RUN", "run", Vector2(screen.x - 166, bottom_y - 4), Vector2(70, 58))
     var light_button := Button.new()
     light_button.text = "LIGHT"
+    light_button.add_to_group("touch_controls")
+    light_button.set_meta("base_pos", Vector2(screen.x - 88, bottom_y - 4))
+    light_button.set_meta("base_size", Vector2(76, 58))
     light_button.position = Vector2(screen.x - 88, bottom_y - 4)
     light_button.size = Vector2(76, 58)
     light_button.focus_mode = Control.FOCUS_NONE
@@ -195,6 +206,9 @@ func _add_hold_button(layer: CanvasLayer, caption: String, action: StringName, p
     button.text = caption
     button.position = pos
     button.size = button_size
+    button.add_to_group("touch_controls")
+    button.set_meta("base_pos", pos)
+    button.set_meta("base_size", button_size)
     button.focus_mode = Control.FOCUS_NONE
     button.add_theme_font_size_override("font_size", 20)
     button.button_down.connect(_press_action.bind(action))
@@ -206,6 +220,36 @@ func _press_action(action: StringName) -> void:
 
 func _release_action(action: StringName) -> void:
     Input.action_release(action)
+
+func apply_graphics_quality(level: String) -> void:
+    if game_environment == null:
+        return
+    var mobile := OS.has_feature("mobile") or DisplayServer.is_touchscreen_available()
+    match level:
+        "Low":
+            game_environment.ambient_light_energy = 0.30
+            game_environment.fog_enabled = false
+            if moon_light: moon_light.shadow_enabled = false
+        "Medium":
+            game_environment.ambient_light_energy = 0.25
+            game_environment.fog_enabled = true
+            game_environment.fog_density = 0.02
+            if moon_light: moon_light.shadow_enabled = false
+        "High":
+            game_environment.ambient_light_energy = 0.22
+            game_environment.fog_enabled = true
+            game_environment.fog_density = 0.035
+            if moon_light: moon_light.shadow_enabled = true
+        "Ultra":
+            game_environment.ambient_light_energy = 0.20
+            game_environment.fog_enabled = true
+            game_environment.fog_density = 0.045
+            if moon_light: moon_light.shadow_enabled = true
+    var player := get_node_or_null("Player")
+    if player:
+        var lamp := player.get_node_or_null("Head/Camera3D/Flashlight")
+        if lamp:
+            lamp.shadow_enabled = level in ["High", "Ultra"]
 
 func _toggle_player_flashlight() -> void:
     var player := get_node_or_null("Player")
