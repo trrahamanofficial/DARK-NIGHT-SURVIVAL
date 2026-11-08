@@ -24,11 +24,11 @@ var startup_label: Label
 
 func _ready() -> void:
     _show_startup_diagnostic("STARTING GAME...")
-    _set_startup_stage("Preparing world environment...")
+    await _set_startup_stage("Preparing world environment...")
     _setup_environment()
-    _set_startup_stage("Building ground...")
+    await _set_startup_stage("Building ground...")
     _make_ground()
-    _set_startup_stage("Building selected map...")
+    await _set_startup_stage("Building selected map...")
     match MapManager.current_map_id:
         "hospital":
             _make_hospital_map()
@@ -40,11 +40,11 @@ func _ready() -> void:
             _start_forest_ambience()
             _make_forest()
             _make_forest_details()
-    _set_startup_stage("Creating player and camera...")
+    await _set_startup_stage("Creating player and camera...")
     _spawn_player()
-    _set_startup_stage("Creating enemies...")
+    await _set_startup_stage("Creating enemies...")
     _spawn_mode_enemies()
-    _set_startup_stage("Placing supplies...")
+    await _set_startup_stage("Placing supplies...")
     _spawn_medkit(Vector3(5.0, 0.0, -7.0))
     _spawn_medkit(Vector3(-8.0, 0.0, -15.0))
     _spawn_resource_pickup(Vector3(8.0, 0.0, -11.0), "cloth", ModeManager.scale_resource_amount(2))
@@ -53,19 +53,20 @@ func _ready() -> void:
     _spawn_resource_pickup(Vector3(-16.0, 0.0, -21.0), "food", ModeManager.scale_resource_amount(1))
     _spawn_resource_pickup(Vector3(18.0, 0.0, -5.0), "water", ModeManager.scale_resource_amount(1))
     if ModeManager.current_mode == "story_campaign":
-        _set_startup_stage("Preparing story objectives...")
+        await _set_startup_stage("Preparing story objectives...")
         StoryCampaign.begin_if_new()
         if MapManager.current_map_id == "forest":
             _make_story_objectives()
-    _set_startup_stage("Building game interface...")
+    await _set_startup_stage("Building game interface...")
     _make_hud()
-    _set_startup_stage("Connecting game systems...")
+    await _set_startup_stage("Connecting game systems...")
     CoopClient.connection_changed.connect(_on_coop_connection_changed)
     CoopClient.match_joined.connect(_on_coop_match_joined)
     CoopClient.match_state_received.connect(_on_coop_state_received)
     CoopClient.peer_left.connect(_on_coop_peer_left)
-    _set_startup_stage("READY — ENTERING THE DARK FOREST")
+    await _set_startup_stage("READY — ENTERING THE DARK FOREST")
     await get_tree().process_frame
+    await get_tree().create_timer(2.0).timeout
     if is_instance_valid(startup_layer):
         startup_layer.queue_free()
         startup_layer = null
@@ -91,6 +92,8 @@ func _show_startup_diagnostic(message: String) -> void:
 func _set_startup_stage(message: String) -> void:
     if is_instance_valid(startup_label):
         startup_label.text = "DARK NIGHT: SURVIVAL\n" + message
+        await get_tree().process_frame
+        await get_tree().create_timer(0.35).timeout
 
 func _process(delta: float) -> void:
     if CoopClient.is_connected_to_server() and not CoopClient.current_match_id.is_empty():
