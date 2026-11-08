@@ -37,7 +37,7 @@ This repository is being developed in staged increments. A successful Android ex
 - Stage 3: mobile and desktop controls implemented; Android/Web export builds passed; Android device QA remains. PC device QA is not required for this mobile-only owner workflow and remains a later platform QA item.
 - Stage 4: local settings persistence and versioned offline save/load implemented; Android/Web export verification and real-device save/reload QA remain.
 - Stage 5: initial survival loop implemented (resource pickups, inventory, crafting, food/water stamina recovery, save persistence); export verification and runtime gameplay QA remain.
-- Stage 6: forest environment pass implemented (procedural terrain details, night fog and moonlight, visible cleared trail corridor, and generated offline wind/night-insect ambience). A full navigation mesh, real-device audio/performance tuning and runtime QA remain; the newest ambience/trail changes need fresh Android/Web export verification.
+- Stage 6: forest environment pass implemented (procedural terrain details, night fog and moonlight, visible cleared trail corridor, and generated offline wind/night-insect ambience). Android/Web export builds passed on the Stage 6 final code; a full navigation mesh, real-device audio/performance tuning and runtime QA remain.
 
 ## Release checklist
 - [ ] All six modes are playable or explicitly marked unavailable in the UI.
@@ -54,3 +54,5 @@ This repository is being developed in staged increments. A successful Android ex
 
 ## Current baseline
 The current playable content is an early procedural Dark Forest prototype. Existing settings UI and touch controls are an early implementation, not final QA-approved systems. Configuration files added in Stage 1 are design data until connected to gameplay code in later stages.
+
+- Stage 7: first enemy AI pass implemented (patrol/investigate/chase/attack/retreat states, line-of-sight and sprint-noise detection, attack wind-up/cooldown, enemy health/death API, Wanderer and Stalker archetypes, and save persistence for enemy positions). Player weapons/hit detection, Brute spawn, navigation/obstacle avoidance, animations/audio and runtime QA remain.
