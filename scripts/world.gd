@@ -50,6 +50,8 @@ func _process(delta: float) -> void:
         return
     if ModeManager.current_mode == "survival":
         survival_wave_timer -= delta
+        if survival_wave_label != null:
+            survival_wave_label.text = "SURVIVAL WAVE %d  |  NEXT WAVE IN %ds" % [survival_wave, maxi(0, ceili(survival_wave_timer))]
         if survival_wave_timer <= 0.0:
             survival_wave += 1
             survival_wave_timer = maxf(14.0, 35.0 - float(survival_wave) * 1.5)
@@ -559,6 +561,7 @@ func _spawn_monster(enemy_name: String = "Wanderer", spawn_position: Vector3 = V
     monster.set_script(MONSTER_SCRIPT)
     monster.position = spawn_position
     monster.configure_archetype(enemy_kind)
+    monster._apply_mode_tuning()
     var body := MeshInstance3D.new()
     var capsule := CapsuleMesh.new()
     capsule.radius = 0.62 if enemy_kind == "brute" else (0.36 if enemy_kind == "stalker" else 0.48)
@@ -1039,9 +1042,9 @@ func _show_mode_selector() -> void:
     overlay_layer.add_child(shade)
     var panel := PanelContainer.new()
     panel.process_mode = Node.PROCESS_MODE_ALWAYS
-    panel.custom_minimum_size = Vector2(340, 410)
+    panel.custom_minimum_size = Vector2(340, 470)
     panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-    panel.position = Vector2(-170, -205)
+    panel.position = Vector2(-170, -235)
     overlay_layer.add_child(panel)
     var scroll := ScrollContainer.new()
     panel.add_child(scroll)
@@ -1077,15 +1080,40 @@ func _show_mode_selector() -> void:
     difficulty_picker.select(maxi(0, difficulty_ids.find(ModeManager.current_difficulty)))
     difficulty_picker.set_meta("difficulty_ids", difficulty_ids)
     stack.add_child(difficulty_picker)
+    var custom_title := Label.new()
+    custom_title.text = "CUSTOM MODE RULES"
+    stack.add_child(custom_title)
+    var threat_label := Label.new()
+    threat_label.text = "ENEMY THREAT  %.2fx" % ModeManager.custom_threat
+    stack.add_child(threat_label)
+    var threat_slider := HSlider.new()
+    threat_slider.min_value = 0.5
+    threat_slider.max_value = 2.0
+    threat_slider.step = 0.05
+    threat_slider.value = ModeManager.custom_threat
+    threat_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    threat_slider.value_changed.connect(_update_custom_threat_label.bind(threat_label))
+    stack.add_child(threat_slider)
+    var resource_label := Label.new()
+    resource_label.text = "RESOURCE AMOUNT  %.2fx" % ModeManager.custom_resources
+    stack.add_child(resource_label)
+    var resource_slider := HSlider.new()
+    resource_slider.min_value = 0.5
+    resource_slider.max_value = 2.0
+    resource_slider.step = 0.05
+    resource_slider.value = ModeManager.custom_resources
+    resource_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    resource_slider.value_changed.connect(_update_custom_resource_label.bind(resource_label))
+    stack.add_child(resource_slider)
     var note := Label.new()
-    note.text = "Co-op is not available yet. Custom mode currently uses the selected difficulty with balanced default rules."
+    note.text = "Co-op is coming soon. Custom rules apply when Custom Mode is selected."
     note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     stack.add_child(note)
     var apply := Button.new()
     apply.text = "APPLY & RESTART"
     apply.custom_minimum_size.y = 46
     apply.process_mode = Node.PROCESS_MODE_ALWAYS
-    apply.pressed.connect(_apply_mode_selection.bind(mode_picker, difficulty_picker))
+    apply.pressed.connect(_apply_mode_selection.bind(mode_picker, difficulty_picker, threat_slider, resource_slider))
     stack.add_child(apply)
     var back := Button.new()
     back.text = "BACK"
@@ -1094,15 +1122,26 @@ func _show_mode_selector() -> void:
     back.pressed.connect(_show_overlay.bind("PAUSED", "Game paused.", true))
     stack.add_child(back)
 
-func _apply_mode_selection(mode_picker: OptionButton, difficulty_picker: OptionButton) -> void:
+func _update_custom_threat_label(value: float, label: Label) -> void:
+    label.text = "ENEMY THREAT  %.2fx" % value
+
+func _update_custom_resource_label(value: float, label: Label) -> void:
+    label.text = "RESOURCE AMOUNT  %.2fx" % value
+
+func _apply_mode_selection(mode_picker: OptionButton, difficulty_picker: OptionButton, threat_slider: HSlider, resource_slider: HSlider) -> void:
     var mode_ids: Array = mode_picker.get_meta("mode_ids", [])
     var difficulty_ids: Array = difficulty_picker.get_meta("difficulty_ids", [])
+    if mode_picker.selected < 0 or mode_picker.selected >= mode_ids.size():
+        return
+    if difficulty_picker.selected < 0 or difficulty_picker.selected >= difficulty_ids.size():
+        return
     var selected_mode := str(mode_ids[mode_picker.selected])
     var selected_difficulty := str(difficulty_ids[difficulty_picker.selected])
     if selected_mode == "coop":
         _show_overlay("CO-OP COMING SOON", "Online co-op needs a dedicated multiplayer server. It is not enabled in this build.", true)
         get_tree().paused = true
         return
+    ModeManager.set_custom_rules(threat_slider.value, resource_slider.value)
     ModeManager.set_mode(selected_mode)
     ModeManager.set_difficulty(selected_difficulty)
     get_tree().paused = false
