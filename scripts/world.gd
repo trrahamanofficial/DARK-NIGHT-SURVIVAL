@@ -3,6 +3,12 @@ extends Node3D
 const PLAYER_SCRIPT = preload("res://scripts/player.gd")
 const MONSTER_SCRIPT = preload("res://scripts/monster.gd")
 
+var health_bar: ProgressBar
+var stamina_bar: ProgressBar
+var status_label: Label
+var overlay_layer: CanvasLayer
+var is_game_over := false
+
 func _ready() -> void:
     _setup_environment()
     _make_ground()
@@ -10,6 +16,95 @@ func _ready() -> void:
     _spawn_player()
     _spawn_monster()
     _make_hud()
+
+func _unhandled_input(event: InputEvent) -> void:
+    if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+        toggle_pause()
+        get_viewport().set_input_as_handled()
+
+func toggle_pause() -> void:
+    if is_game_over:
+        return
+    if get_tree().paused:
+        _close_overlay()
+    else:
+        _show_overlay("PAUSED", "The forest is waiting. Take a breath.", true)
+        get_tree().paused = true
+        Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func _close_overlay() -> void:
+    get_tree().paused = false
+    if overlay_layer != null:
+        overlay_layer.queue_free()
+        overlay_layer = null
+    if not OS.has_feature("mobile"):
+        Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func _on_health_changed(current: float, maximum: float) -> void:
+    if health_bar != null:
+        health_bar.max_value = maximum
+        health_bar.value = current
+    if status_label != null:
+        status_label.text = "HEALTH  %d / %d" % [roundi(current), roundi(maximum)]
+
+func _on_stamina_changed(current: float, maximum: float) -> void:
+    if stamina_bar != null:
+        stamina_bar.max_value = maximum
+        stamina_bar.value = current
+
+func _on_player_died() -> void:
+    is_game_over = true
+    get_tree().paused = true
+    _show_overlay("YOU DIED", "The darkness has claimed you. Try again?", false)
+
+func _show_overlay(heading: String, message: String, show_resume: bool) -> void:
+    if overlay_layer != null:
+        overlay_layer.queue_free()
+    overlay_layer = CanvasLayer.new()
+    overlay_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+    overlay_layer.layer = 20
+    add_child(overlay_layer)
+    var shade := ColorRect.new()
+    shade.color = Color(0.005, 0.008, 0.015, 0.88)
+    shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    overlay_layer.add_child(shade)
+    var panel := PanelContainer.new()
+    panel.process_mode = Node.PROCESS_MODE_ALWAYS
+    panel.custom_minimum_size = Vector2(330, 230)
+    panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+    panel.position = Vector2(-165, -115)
+    overlay_layer.add_child(panel)
+    var stack := VBoxContainer.new()
+    stack.alignment = BoxContainer.ALIGNMENT_CENTER
+    stack.add_theme_constant_override("separation", 14)
+    panel.add_child(stack)
+    var title := Label.new()
+    title.text = heading
+    title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    title.add_theme_font_size_override("font_size", 30)
+    stack.add_child(title)
+    var detail := Label.new()
+    detail.text = message
+    detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    stack.add_child(detail)
+    if show_resume:
+        var resume := Button.new()
+        resume.text = "RESUME"
+        resume.custom_minimum_size.y = 44
+        resume.process_mode = Node.PROCESS_MODE_ALWAYS
+        resume.pressed.connect(toggle_pause)
+        stack.add_child(resume)
+    var restart := Button.new()
+    restart.text = "RESTART GAME"
+    restart.custom_minimum_size.y = 44
+    restart.process_mode = Node.PROCESS_MODE_ALWAYS
+    restart.pressed.connect(_restart_game)
+    stack.add_child(restart)
+
+func _restart_game() -> void:
+    get_tree().paused = false
+    get_tree().reload_current_scene()
 
 var game_environment: Environment
 var moon_light: DirectionalLight3D
@@ -166,6 +261,30 @@ func _make_hud() -> void:
     label.add_theme_color_override("font_color", Color(0.78, 0.84, 0.88, 0.85))
     label.add_theme_font_size_override("font_size", 16)
     layer.add_child(label)
+    status_label = Label.new()
+    status_label.text = "HEALTH  100 / 100"
+    status_label.position = Vector2(20, 54)
+    status_label.add_theme_font_size_override("font_size", 13)
+    layer.add_child(status_label)
+    health_bar = ProgressBar.new()
+    health_bar.position = Vector2(20, 76)
+    health_bar.size = Vector2(245, 16)
+    health_bar.max_value = 100
+    health_bar.value = 100
+    health_bar.show_percentage = false
+    layer.add_child(health_bar)
+    var stamina_label := Label.new()
+    stamina_label.text = "STAMINA"
+    stamina_label.position = Vector2(20, 96)
+    stamina_label.add_theme_font_size_override("font_size", 12)
+    layer.add_child(stamina_label)
+    stamina_bar = ProgressBar.new()
+    stamina_bar.position = Vector2(20, 116)
+    stamina_bar.size = Vector2(245, 13)
+    stamina_bar.max_value = 100
+    stamina_bar.value = 100
+    stamina_bar.show_percentage = false
+    layer.add_child(stamina_bar)
     var crosshair := Label.new()
     crosshair.text = "+"
     crosshair.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -173,6 +292,11 @@ func _make_hud() -> void:
     crosshair.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0, 0.7))
     layer.add_child(crosshair)
     add_child(layer)
+    var player := get_node_or_null("Player")
+    if player != null:
+        player.health_changed.connect(_on_health_changed)
+        player.stamina_changed.connect(_on_stamina_changed)
+        player.player_died.connect(_on_player_died)
     var settings_layer := CanvasLayer.new()
     settings_layer.set_script(preload("res://scripts/settings_ui.gd"))
     add_child(settings_layer)
