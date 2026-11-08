@@ -8,6 +8,7 @@ var stamina_bar: ProgressBar
 var status_label: Label
 var medkit_count_label: Label
 var resources_label: Label
+var story_label: Label
 var overlay_layer: CanvasLayer
 var is_game_over := false
 
@@ -28,6 +29,8 @@ func _ready() -> void:
     _spawn_resource_pickup(Vector3(13.0, 0.0, -19.0), "scrap", 2)
     _spawn_resource_pickup(Vector3(-16.0, 0.0, -21.0), "food", 1)
     _spawn_resource_pickup(Vector3(18.0, 0.0, -5.0), "water", 1)
+    StoryCampaign.begin_if_new()
+    _make_story_objectives()
     _make_hud()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -533,6 +536,16 @@ func _make_hud() -> void:
     resources_label.position = Vector2(20, 156)
     resources_label.add_theme_font_size_override("font_size", 11)
     layer.add_child(resources_label)
+    story_label = Label.new()
+    story_label.position = Vector2(20, 180)
+    story_label.size = Vector2(430, 74)
+    story_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    story_label.add_theme_color_override("font_color", Color(0.82, 0.88, 1.0, 0.96))
+    story_label.add_theme_font_size_override("font_size", 13)
+    layer.add_child(story_label)
+    StoryCampaign.campaign_updated.connect(_on_story_campaign_updated)
+    StoryCampaign.campaign_completed.connect(_on_story_campaign_completed)
+    _on_story_campaign_updated(StoryCampaign.get_mission_title(), StoryCampaign.get_objective_text(), StoryCampaign.get_progress_text())
     var crosshair := Label.new()
     crosshair.text = "+"
     crosshair.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -719,7 +732,8 @@ func _save_game() -> void:
         "flashlight_on": bool(player.flashlight_on),
         "enemy_positions": enemy_positions,
         "medkit_pickups": pickup_positions,
-        "resource_pickups": resource_pickups
+        "resource_pickups": resource_pickups,
+        "story_campaign": StoryCampaign.get_save_data()
     }
     var saved := SaveManager.save_slot(1, payload)
     if saved:
@@ -762,6 +776,12 @@ func _load_game() -> void:
     player.stamina_changed.emit(player.stamina, player.max_stamina)
     player.inventory_changed.emit(player.medkits)
     player.resources_changed.emit(player.resources.duplicate(true))
+    var saved_story: Variant = payload.get("story_campaign", {})
+    if typeof(saved_story) == TYPE_DICTIONARY:
+        StoryCampaign.load_save_data(saved_story)
+        for trigger in get_tree().get_nodes_in_group("story_triggers"):
+            if is_instance_valid(trigger) and StoryCampaign.is_objective_done(str(trigger.get_meta("objective_id", ""))):
+                trigger.queue_free()
     var saved_enemies: Variant = payload.get("enemy_positions", {})
     if typeof(saved_enemies) == TYPE_DICTIONARY:
         for enemy in get_tree().get_nodes_in_group("enemies"):
@@ -792,3 +812,81 @@ func _load_game() -> void:
                 _spawn_resource_pickup(resource_position - Vector3(0.0, 0.55, 0.0), resource_item, resource_amount)
     if player.is_dead:
         _on_player_died()
+
+func _make_story_objectives() -> void:
+    _spawn_story_trigger("reach_radio", "ABANDONED RADIO", Vector3(0.0, 0.0, -29.0), Color(0.25, 0.72, 1.0))
+    _spawn_story_trigger("evidence_1", "RADIO LOG 01", Vector3(8.0, 0.0, -33.0), Color(0.65, 0.82, 1.0))
+    _spawn_story_trigger("evidence_2", "RADIO LOG 02", Vector3(-9.0, 0.0, -35.0), Color(0.65, 0.82, 1.0))
+    _spawn_story_trigger("evidence_3", "RADIO LOG 03", Vector3(1.0, 0.0, -40.0), Color(0.65, 0.82, 1.0))
+    _spawn_story_trigger("signal_tower", "SIGNAL TOWER", Vector3(-26.0, 0.0, -38.0), Color(0.35, 0.9, 0.65))
+    _spawn_story_trigger("extraction", "EXTRACTION POINT", Vector3(27.0, 0.0, -40.0), Color(1.0, 0.68, 0.28))
+
+func _spawn_story_trigger(objective_id: String, marker_text: String, marker_position: Vector3, marker_color: Color) -> void:
+    if StoryCampaign.is_objective_done(objective_id):
+        return
+    var trigger := Area3D.new()
+    trigger.name = "Story_" + objective_id
+    trigger.add_to_group("story_triggers")
+    trigger.set_meta("objective_id", objective_id)
+    trigger.position = marker_position
+    var marker := MeshInstance3D.new()
+    var orb := SphereMesh.new()
+    orb.radius = 0.42
+    orb.height = 0.84
+    marker.mesh = orb
+    var material := StandardMaterial3D.new()
+    material.albedo_color = marker_color
+    material.emission_enabled = true
+    material.emission = marker_color * 0.55
+    marker.material_override = material
+    marker.position.y = 1.15
+    trigger.add_child(marker)
+    var label := Label3D.new()
+    label.text = marker_text
+    label.font_size = 30
+    label.pixel_size = 0.008
+    label.position.y = 2.0
+    label.modulate = marker_color
+    trigger.add_child(label)
+    var collision := CollisionShape3D.new()
+    var sphere := SphereShape3D.new()
+    sphere.radius = 2.4
+    collision.shape = sphere
+    trigger.add_child(collision)
+    trigger.body_entered.connect(_on_story_trigger_body_entered.bind(trigger, objective_id))
+    add_child(trigger)
+
+func _on_story_trigger_body_entered(body: Node3D, trigger: Area3D, objective_id: String) -> void:
+    if body.name != "Player" or not is_instance_valid(trigger):
+        return
+    var accepted := false
+    if objective_id.begins_with("evidence_"):
+        accepted = StoryCampaign.mark_evidence_found(objective_id)
+    else:
+        accepted = StoryCampaign.complete_objective(objective_id)
+    if not accepted:
+        return
+    StoryCampaign.set_checkpoint(body.global_position, float(body.health))
+    trigger.queue_free()
+    if objective_id == "reach_radio":
+        _show_story_message("RADIO DISCOVERED", "A broken transmission repeats: 'Tower seven... extraction before dawn.'")
+    elif objective_id.begins_with("evidence_"):
+        _show_story_message("EVIDENCE RECOVERED", "A fragment of the final transmission has been recovered.")
+    elif objective_id == "signal_tower":
+        _show_story_message("SIGNAL RESTORED", "The tower answers. Something in the forest answers back.")
+    elif objective_id == "extraction":
+        _show_story_message("CAMPAIGN COMPLETE", "You escaped the Dark Forest. The transmission is not over...")
+        get_tree().paused = true
+
+func _on_story_campaign_updated(mission_title: String, objective_text: String, progress_text: String) -> void:
+    if story_label != null:
+        story_label.text = mission_title + "\n" + objective_text + "  [" + progress_text + "]"
+
+func _on_story_campaign_completed() -> void:
+    if story_label != null:
+        story_label.text = "CAMPAIGN COMPLETE\nYou escaped the Dark Forest."
+
+func _show_story_message(heading: String, message: String) -> void:
+    _show_overlay(heading, message, true)
+    get_tree().paused = true
+
