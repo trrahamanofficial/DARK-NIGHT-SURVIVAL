@@ -27,6 +27,7 @@ var is_dead := false
 var damage_cooldown := 0.0
 var mobile_move_vector := Vector2.ZERO
 var touch_sensitivity_multiplier := 1.0
+var mouse_sensitivity_multiplier := 1.0
 var touch_look_on_right := true
 
 @onready var head: Node3D = $Head
@@ -63,7 +64,7 @@ func _unhandled_input(event: InputEvent) -> void:
     if is_dead or get_tree().paused:
         return
     if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-        _look(event.relative, mouse_sensitivity)
+        _look(event.relative, mouse_sensitivity * mouse_sensitivity_multiplier)
     elif event is InputEventScreenDrag:
         var look_side_start := 0.52 if touch_look_on_right else 0.0
         var look_side_end := 1.0 if touch_look_on_right else 0.48
@@ -85,6 +86,9 @@ func set_touch_sensitivity_multiplier(value: float) -> void:
 
 func set_touch_look_on_right(value: bool) -> void:
     touch_look_on_right = value
+
+func set_mouse_sensitivity_multiplier(value: float) -> void:
+    mouse_sensitivity_multiplier = clampf(value, 0.5, 2.0)
 
 func _look(delta_position: Vector2, sensitivity: float) -> void:
     rotate_y(-delta_position.x * sensitivity)
