@@ -68,6 +68,7 @@ func _on_medkit_body_entered(body: Node3D, pickup: Area3D) -> void:
 func _spawn_medkit(position_3d: Vector3) -> void:
     var pickup := Area3D.new()
     pickup.name = "MedkitPickup"
+    pickup.add_to_group("save_pickups")
     pickup.position = position_3d + Vector3(0.0, 0.55, 0.0)
     var mesh := MeshInstance3D.new()
     var box := BoxMesh.new()
@@ -130,6 +131,18 @@ func _show_overlay(heading: String, message: String, show_resume: bool) -> void:
     detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     stack.add_child(detail)
+    var save_button := Button.new()
+    save_button.text = "SAVE GAME — SLOT 1"
+    save_button.custom_minimum_size.y = 42
+    save_button.process_mode = Node.PROCESS_MODE_ALWAYS
+    save_button.pressed.connect(_save_game)
+    stack.add_child(save_button)
+    var load_button := Button.new()
+    load_button.text = "LOAD GAME — SLOT 1"
+    load_button.custom_minimum_size.y = 42
+    load_button.process_mode = Node.PROCESS_MODE_ALWAYS
+    load_button.pressed.connect(_load_game)
+    stack.add_child(load_button)
     if show_resume:
         var resume := Button.new()
         resume.text = "RESUME"
@@ -456,3 +469,80 @@ func _toggle_player_flashlight() -> void:
     var player := get_node_or_null("Player")
     if player != null and player.has_method("_toggle_flashlight"):
         player._toggle_flashlight()
+
+func _vector3_to_array(value: Vector3) -> Array:
+    return [value.x, value.y, value.z]
+
+func _array_to_vector3(value: Variant, fallback: Vector3 = Vector3.ZERO) -> Vector3:
+    if typeof(value) != TYPE_ARRAY or value.size() != 3:
+        return fallback
+    return Vector3(float(value[0]), float(value[1]), float(value[2]))
+
+func _save_game() -> void:
+    var player := get_node_or_null("Player")
+    if player == null:
+        return
+    var pickup_positions: Array = []
+    for pickup in get_tree().get_nodes_in_group("save_pickups"):
+        if is_instance_valid(pickup):
+            pickup_positions.append(_vector3_to_array(pickup.position))
+    var monster := get_node_or_null("Wanderer")
+    var payload := {
+        "player_position": _vector3_to_array(player.position),
+        "player_yaw": player.rotation.y,
+        "player_pitch": float(player.look_pitch),
+        "health": float(player.health),
+        "stamina": float(player.stamina),
+        "medkits": int(player.medkits),
+        "flashlight_on": bool(player.flashlight_on),
+        "monster_position": _vector3_to_array(monster.position) if monster else [],
+        "medkit_pickups": pickup_positions
+    }
+    var saved := SaveManager.save_slot(1, payload)
+    if saved:
+        _show_overlay("GAME SAVED", "Your offline progress was saved to Slot 1.", true)
+        get_tree().paused = true
+    else:
+        _show_overlay("SAVE FAILED", "The save could not be written. Check device storage.", true)
+        get_tree().paused = true
+
+func _load_game() -> void:
+    var payload: Dictionary = SaveManager.load_slot(1)
+    if payload.is_empty():
+        _show_overlay("NO SAVE FOUND", "Slot 1 is empty or the save is incompatible.", true)
+        get_tree().paused = true
+        return
+    var player := get_node_or_null("Player")
+    if player == null:
+        return
+    get_tree().paused = false
+    is_game_over = false
+    if overlay_layer != null:
+        overlay_layer.queue_free()
+        overlay_layer = null
+    player.position = _array_to_vector3(payload.get("player_position", []), player.position)
+    player.rotation.y = float(payload.get("player_yaw", player.rotation.y))
+    player.look_pitch = clampf(float(payload.get("player_pitch", 0.0)), deg_to_rad(-82.0), deg_to_rad(82.0))
+    player.head.rotation.x = player.look_pitch
+    player.health = clampf(float(payload.get("health", 100.0)), 0.0, player.max_health)
+    player.stamina = clampf(float(payload.get("stamina", 100.0)), 0.0, player.max_stamina)
+    player.medkits = maxi(0, int(payload.get("medkits", 0)))
+    player.is_dead = player.health <= 0.0
+    player.flashlight_on = bool(payload.get("flashlight_on", true))
+    player.lamp.visible = player.flashlight_on
+    player.velocity = Vector3.ZERO
+    player.health_changed.emit(player.health, player.max_health)
+    player.stamina_changed.emit(player.stamina, player.max_stamina)
+    player.inventory_changed.emit(player.medkits)
+    var monster := get_node_or_null("Wanderer")
+    if monster and payload.has("monster_position"):
+        monster.position = _array_to_vector3(payload.get("monster_position", []), monster.position)
+        monster.velocity = Vector3.ZERO
+    for pickup in get_tree().get_nodes_in_group("save_pickups"):
+        if is_instance_valid(pickup):
+            pickup.queue_free()
+    for saved_position in payload.get("medkit_pickups", []):
+        var position_3d := _array_to_vector3(saved_position)
+        _spawn_medkit(position_3d - Vector3(0.0, 0.55, 0.0))
+    if player.is_dead:
+        _on_player_died()
