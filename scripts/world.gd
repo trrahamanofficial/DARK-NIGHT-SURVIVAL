@@ -6,6 +6,7 @@ const MONSTER_SCRIPT = preload("res://scripts/monster.gd")
 var health_bar: ProgressBar
 var stamina_bar: ProgressBar
 var status_label: Label
+var medkit_count_label: Label
 var overlay_layer: CanvasLayer
 var is_game_over := false
 
@@ -15,6 +16,8 @@ func _ready() -> void:
     _make_forest()
     _spawn_player()
     _spawn_monster()
+    _spawn_medkit(Vector3(5.0, 0.0, -7.0))
+    _spawn_medkit(Vector3(-8.0, 0.0, -15.0))
     _make_hud()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -51,6 +54,45 @@ func _on_stamina_changed(current: float, maximum: float) -> void:
     if stamina_bar != null:
         stamina_bar.max_value = maximum
         stamina_bar.value = current
+
+func _on_inventory_changed(medkit_count: int) -> void:
+    if medkit_count_label != null:
+        medkit_count_label.text = "MEDKIT  x%d  |  H / HEAL" % medkit_count
+
+func _on_medkit_body_entered(body: Node3D, pickup: Area3D) -> void:
+    if body.name != "Player" or not body.has_method("add_medkit"):
+        return
+    body.add_medkit(1)
+    pickup.queue_free()
+
+func _spawn_medkit(position_3d: Vector3) -> void:
+    var pickup := Area3D.new()
+    pickup.name = "MedkitPickup"
+    pickup.position = position_3d + Vector3(0.0, 0.55, 0.0)
+    var mesh := MeshInstance3D.new()
+    var box := BoxMesh.new()
+    box.size = Vector3(0.65, 0.38, 0.48)
+    mesh.mesh = box
+    var material := StandardMaterial3D.new()
+    material.albedo_color = Color(0.68, 0.08, 0.10)
+    material.emission_enabled = true
+    material.emission = Color(0.18, 0.015, 0.02)
+    mesh.material_override = material
+    pickup.add_child(mesh)
+    var mark := Label3D.new()
+    mark.text = "+"
+    mark.font_size = 64
+    mark.pixel_size = 0.008
+    mark.position = Vector3(0.0, 0.24, 0.0)
+    mark.modulate = Color.WHITE
+    pickup.add_child(mark)
+    var collision := CollisionShape3D.new()
+    var sphere := SphereShape3D.new()
+    sphere.radius = 1.15
+    collision.shape = sphere
+    pickup.add_child(collision)
+    pickup.body_entered.connect(_on_medkit_body_entered.bind(pickup))
+    add_child(pickup)
 
 func _on_player_died() -> void:
     is_game_over = true
@@ -285,6 +327,11 @@ func _make_hud() -> void:
     stamina_bar.value = 100
     stamina_bar.show_percentage = false
     layer.add_child(stamina_bar)
+    medkit_count_label = Label.new()
+    medkit_count_label.text = "MEDKIT  x0  |  H / HEAL"
+    medkit_count_label.position = Vector2(20, 136)
+    medkit_count_label.add_theme_font_size_override("font_size", 12)
+    layer.add_child(medkit_count_label)
     var crosshair := Label.new()
     crosshair.text = "+"
     crosshair.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -296,6 +343,7 @@ func _make_hud() -> void:
     if player != null:
         player.health_changed.connect(_on_health_changed)
         player.stamina_changed.connect(_on_stamina_changed)
+        player.inventory_changed.connect(_on_inventory_changed)
         player.player_died.connect(_on_player_died)
     var settings_layer := CanvasLayer.new()
     settings_layer.set_script(preload("res://scripts/settings_ui.gd"))
@@ -324,6 +372,14 @@ func _make_mobile_controls(layer: CanvasLayer) -> void:
     light_button.add_theme_font_size_override("font_size", 14)
     light_button.pressed.connect(_toggle_player_flashlight)
     layer.add_child(light_button)
+    var heal_button := Button.new()
+    heal_button.text = "HEAL"
+    heal_button.position = Vector2(screen.x - 88, bottom_y - 72)
+    heal_button.size = Vector2(76, 58)
+    heal_button.focus_mode = Control.FOCUS_NONE
+    heal_button.add_theme_font_size_override("font_size", 14)
+    heal_button.pressed.connect(_use_player_medkit)
+    layer.add_child(heal_button)
 
 func _add_hold_button(layer: CanvasLayer, caption: String, action: StringName, pos: Vector2, button_size: Vector2) -> void:
     var button := Button.new()
@@ -374,6 +430,11 @@ func apply_graphics_quality(level: String) -> void:
         var lamp := player.get_node_or_null("Head/Camera3D/Flashlight")
         if lamp:
             lamp.shadow_enabled = level in ["High", "Ultra"]
+
+func _use_player_medkit() -> void:
+    var player := get_node_or_null("Player")
+    if player != null and player.has_method("use_medkit"):
+        player.use_medkit()
 
 func _toggle_player_flashlight() -> void:
     var player := get_node_or_null("Player")
