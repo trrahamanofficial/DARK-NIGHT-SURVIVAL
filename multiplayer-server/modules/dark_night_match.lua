@@ -26,9 +26,9 @@ function M.match_join_attempt(context, dispatcher, tick, state, presence, metada
   local count = 0
   for _ in pairs(state.players) do count = count + 1 end
   if count >= MAX_PLAYERS and not state.players[presence.user_id] then
-    return nil, "This co-op session is full."
+    return state, false, "This co-op session is full."
   end
-  return state
+  return state, true
 end
 function M.match_join(context, dispatcher, tick, state, presences)
   for _, presence in ipairs(presences) do
