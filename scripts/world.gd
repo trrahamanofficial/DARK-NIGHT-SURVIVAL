@@ -15,6 +15,9 @@ var survival_wave := 1
 var survival_wave_timer := 35.0
 var survival_wave_label: Label
 var mode_status_label: Label
+var coop_status_label: Label
+var remote_players: Dictionary = {}
+var coop_input_timer := 0.0
 
 func _ready() -> void:
     _setup_environment()
@@ -44,8 +47,22 @@ func _ready() -> void:
         if MapManager.current_map_id == "forest":
             _make_story_objectives()
     _make_hud()
+    CoopClient.connection_changed.connect(_on_coop_connection_changed)
+    CoopClient.match_joined.connect(_on_coop_match_joined)
+    CoopClient.match_state_received.connect(_on_coop_state_received)
+    CoopClient.peer_left.connect(_on_coop_peer_left)
 
 func _process(delta: float) -> void:
+    if CoopClient.is_connected_to_server() and not CoopClient.current_match_id.is_empty():
+        coop_input_timer += delta
+        if coop_input_timer >= 0.1:
+            coop_input_timer = 0.0
+            var local_player := get_node_or_null("Player")
+            if local_player != null:
+                var move: Vector2 = local_player.mobile_move_vector
+                if move.length() < 0.05:
+                    move = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+                CoopClient.send_player_input(move, local_player.rotation.y)
     if get_tree().paused or is_game_over:
         return
     if ModeManager.current_mode == "survival":
@@ -297,6 +314,12 @@ func _show_overlay(heading: String, message: String, show_resume: bool) -> void:
     map_button.process_mode = Node.PROCESS_MODE_ALWAYS
     map_button.pressed.connect(_show_map_selector)
     stack.add_child(map_button)
+    var coop_button := Button.new()
+    coop_button.text = "CO-OP MULTIPLAYER"
+    coop_button.custom_minimum_size.y = 42
+    coop_button.process_mode = Node.PROCESS_MODE_ALWAYS
+    coop_button.pressed.connect(_show_coop_lobby)
+    stack.add_child(coop_button)
     var restart := Button.new()
     restart.text = "RESTART GAME"
     restart.custom_minimum_size.y = 44
@@ -1265,3 +1288,157 @@ func _show_story_message(heading: String, message: String) -> void:
     stack.add_child(continue_button)
     get_tree().paused = true
 
+
+
+func _show_coop_lobby() -> void:
+    if overlay_layer != null:
+        overlay_layer.queue_free()
+    overlay_layer = CanvasLayer.new()
+    overlay_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+    overlay_layer.layer = 24
+    add_child(overlay_layer)
+    var shade := ColorRect.new()
+    shade.color = Color(0.004, 0.008, 0.018, 0.94)
+    shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    overlay_layer.add_child(shade)
+    var panel := PanelContainer.new()
+    panel.process_mode = Node.PROCESS_MODE_ALWAYS
+    panel.custom_minimum_size = Vector2(340, 320)
+    panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+    panel.position = Vector2(-170, -160)
+    overlay_layer.add_child(panel)
+    var stack := VBoxContainer.new()
+    stack.add_theme_constant_override("separation", 12)
+    panel.add_child(stack)
+    var title := Label.new()
+    title.text = "CO-OP MULTIPLAYER"
+    title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    title.add_theme_font_size_override("font_size", 23)
+    stack.add_child(title)
+    coop_status_label = Label.new()
+    coop_status_label.text = "Status: " + ("Connected" if CoopClient.is_connected_to_server() else "Not connected")
+    coop_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    stack.add_child(coop_status_label)
+    var name_input := LineEdit.new()
+    name_input.placeholder_text = "Survivor name"
+    name_input.text = "Survivor"
+    stack.add_child(name_input)
+    var connect_button := Button.new()
+    connect_button.text = "CONNECT TO SERVER"
+    connect_button.custom_minimum_size.y = 44
+    connect_button.process_mode = Node.PROCESS_MODE_ALWAYS
+    connect_button.pressed.connect(_coop_connect.bind(name_input))
+    stack.add_child(connect_button)
+    var create_button := Button.new()
+    create_button.text = "CREATE 1–4 PLAYER SESSION"
+    create_button.custom_minimum_size.y = 44
+    create_button.process_mode = Node.PROCESS_MODE_ALWAYS
+    create_button.pressed.connect(_coop_create_match)
+    stack.add_child(create_button)
+    var match_input := LineEdit.new()
+    match_input.placeholder_text = "Paste Match ID to join"
+    stack.add_child(match_input)
+    var join_button := Button.new()
+    join_button.text = "JOIN SESSION"
+    join_button.custom_minimum_size.y = 44
+    join_button.process_mode = Node.PROCESS_MODE_ALWAYS
+    join_button.pressed.connect(_coop_join_match.bind(match_input))
+    stack.add_child(join_button)
+    var disconnect_button := Button.new()
+    disconnect_button.text = "DISCONNECT"
+    disconnect_button.process_mode = Node.PROCESS_MODE_ALWAYS
+    disconnect_button.pressed.connect(CoopClient.disconnect_from_server)
+    stack.add_child(disconnect_button)
+    var back := Button.new()
+    back.text = "BACK"
+    back.process_mode = Node.PROCESS_MODE_ALWAYS
+    back.pressed.connect(_show_overlay.bind("PAUSED", "Game paused.", true))
+    stack.add_child(back)
+
+func _coop_connect(name_input: LineEdit) -> void:
+    if coop_status_label != null:
+        coop_status_label.text = "Connecting..."
+    var ok: bool = await CoopClient.authenticate_and_connect(name_input.text)
+    if not ok and coop_status_label != null:
+        coop_status_label.text = "Connection failed. Check server address and deployment."
+
+func _coop_create_match() -> void:
+    if coop_status_label != null:
+        coop_status_label.text = "Creating session..."
+    var ok: bool = await CoopClient.create_match()
+    if not ok and coop_status_label != null:
+        coop_status_label.text = "Could not create session. Confirm server is deployed and module loaded."
+
+func _coop_join_match(match_input: LineEdit) -> void:
+    var match_id := match_input.text.strip_edges()
+    if match_id.is_empty():
+        if coop_status_label != null:
+            coop_status_label.text = "Enter a Match ID first."
+        return
+    var ok: bool = await CoopClient.join_match(match_id)
+    if not ok and coop_status_label != null:
+        coop_status_label.text = "Join request could not be sent."
+
+func _on_coop_connection_changed(connected: bool, message: String) -> void:
+    if coop_status_label != null:
+        coop_status_label.text = ("Connected: " if connected else "Status: ") + message
+
+func _on_coop_match_joined(match_id: String) -> void:
+    if coop_status_label != null:
+        coop_status_label.text = "Joined session. Match ID: " + match_id
+    get_tree().paused = false
+    if overlay_layer != null:
+        overlay_layer.queue_free()
+        overlay_layer = null
+
+func _on_coop_state_received(state: Dictionary) -> void:
+    var players: Dictionary = state.get("players", {})
+    var active_ids: Array[String] = []
+    for user_id in players.keys():
+        var id := str(user_id)
+        if id == CoopClient.user_id:
+            continue
+        active_ids.append(id)
+        var data: Dictionary = players[user_id]
+        var avatar: Node3D = remote_players.get(id)
+        if avatar == null or not is_instance_valid(avatar):
+            avatar = _create_remote_survivor(id)
+            remote_players[id] = avatar
+        avatar.position = Vector3(float(data.get("x", 0.0)), 0.0, float(data.get("z", 0.0)))
+        avatar.rotation.y = float(data.get("yaw", 0.0))
+    for id in remote_players.keys():
+        if not active_ids.has(str(id)):
+            var old: Node3D = remote_players[id]
+            if is_instance_valid(old):
+                old.queue_free()
+            remote_players.erase(id)
+
+func _create_remote_survivor(user_id: String) -> Node3D:
+    var avatar := Node3D.new()
+    avatar.name = "Remote_" + user_id.substr(0, 8)
+    var body := MeshInstance3D.new()
+    var capsule := CapsuleMesh.new()
+    capsule.radius = 0.38
+    capsule.height = 1.65
+    body.mesh = capsule
+    var material := StandardMaterial3D.new()
+    material.albedo_color = Color(0.18, 0.42, 0.58)
+    material.roughness = 0.82
+    body.material_override = material
+    body.position.y = 0.85
+    avatar.add_child(body)
+    var label := Label3D.new()
+    label.text = "SURVIVOR"
+    label.position.y = 2.0
+    label.font_size = 24
+    label.pixel_size = 0.008
+    avatar.add_child(label)
+    add_child(avatar)
+    return avatar
+
+func _on_coop_peer_left(user_id: String) -> void:
+    if remote_players.has(user_id):
+        var avatar: Node3D = remote_players[user_id]
+        if is_instance_valid(avatar):
+            avatar.queue_free()
+        remote_players.erase(user_id)
