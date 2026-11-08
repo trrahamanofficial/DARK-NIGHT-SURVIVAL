@@ -126,8 +126,8 @@ func _apply_control_settings() -> void:
         control.size = base_size * ui_scale
         control.modulate.a = touch_opacity
         if control.name == "VirtualJoystick":
-            control.radius = 66.0 * ui_scale
-            control.queue_redraw()
+            control.set("radius", 66.0 * ui_scale)
+            control.call("queue_redraw")
         if swapped:
             control.position = Vector2(viewport_size.x - base_pos.x - control.size.x, base_pos.y)
         else:
