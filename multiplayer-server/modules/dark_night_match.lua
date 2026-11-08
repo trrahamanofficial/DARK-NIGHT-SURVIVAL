@@ -76,4 +76,10 @@ function M.match_loop(context, dispatcher, tick, state, messages)
 end
 function M.match_terminate(context, dispatcher, tick, state, grace_seconds) return state end
 function M.match_signal(context, dispatcher, tick, state, data) return state, data end
+local function create_coop_match(context, payload)
+  local match_id = nk.match_create("dark_night_coop", {})
+  return nk.json_encode({ match_id = match_id, max_players = MAX_PLAYERS })
+end
+
+nk.register_rpc(create_coop_match, "create_coop_match")
 nk.register_match("dark_night_coop", M)
