@@ -1,0 +1,36 @@
+{
+  "campaign_id": "dark_night_forest_01",
+  "title": "DARK NIGHT: THE SILENT FOREST",
+  "offline": true,
+  "chapters": [
+    {
+      "id": "reach_radio",
+      "title": "The Silent Forest",
+      "objective": "Follow the trail and reach the abandoned radio.",
+      "checkpoint": true
+    },
+    {
+      "id": "evidence",
+      "title": "Lost Signal",
+      "objective": "Find all three missing radio evidence pieces.",
+      "required_evidence": 3,
+      "checkpoint": true
+    },
+    {
+      "id": "signal_tower",
+      "title": "The Last Transmission",
+      "objective": "Reach the old signal tower and restore contact.",
+      "checkpoint": true
+    },
+    {
+      "id": "extraction",
+      "title": "Get Out Alive",
+      "objective": "Reach the extraction clearing.",
+      "ending": "You escaped the Dark Forest. The transmission is not over..."
+    }
+  ],
+  "notes": [
+    "Mission progress and checkpoint state are stored in the local offline save.",
+    "Story beats currently use in-game text panels; cinematic cutscenes and voice acting are future work."
+  ]
+}
