@@ -577,6 +577,8 @@ func _spawn_player() -> void:
     light.shadow_enabled = true
     camera.add_child(light)
     add_child(player)
+    # Activate the gameplay camera only after its player is inside the scene tree.
+    camera.make_current()
 
 func _spawn_monster(enemy_name: String = "Wanderer", spawn_position: Vector3 = Vector3(0.0, 0.1, -17.0), enemy_kind: String = "wanderer") -> void:
     var monster := CharacterBody3D.new()
