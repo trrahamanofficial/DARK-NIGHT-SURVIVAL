@@ -1,0 +1,82 @@
+name: Build DARK NIGHT Survival Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "project.godot"
+      - "export_presets.cfg"
+      - "scenes/**"
+      - "scripts/**"
+      - ".github/workflows/build-android.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  export-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: |
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          yes | sdkmanager --licenses
+
+      - name: Download Godot 4.7.2
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip -O godot.zip
+          unzip -q godot.zip
+          chmod +x Godot_v4.7.2-stable_linux.x86_64
+
+      - name: Install matching export templates
+        run: |
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          wget -q https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz -O templates.tpz
+          unzip -q templates.tpz -d "$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          if [ -d "$HOME/.local/share/godot/export_templates/4.7.2.stable/templates" ]; then
+            mv "$HOME/.local/share/godot/export_templates/4.7.2.stable/templates/"* "$HOME/.local/share/godot/export_templates/4.7.2.stable/"
+            rmdir "$HOME/.local/share/godot/export_templates/4.7.2.stable/templates"
+          fi
+
+      - name: Configure Android paths and debug signing
+        run: |
+          mkdir -p "$HOME/.config/godot" "$HOME/.android" build/android
+          keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/debug_keystore = "$HOME/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+
+      - name: Import project resources
+        run: ./Godot_v4.7.2-stable_linux.x86_64 --headless --path . --editor --quit
+
+      - name: Export Android APK
+        run: |
+          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path . --export-debug "Android" build/android/DARK-NIGHT-SURVIVAL.apk
+          test -s build/android/DARK-NIGHT-SURVIVAL.apk
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DARK-NIGHT-SURVIVAL-ANDROID-APK
+          path: build/android/DARK-NIGHT-SURVIVAL.apk
+          if-no-files-found: error
+          retention-days: 14
