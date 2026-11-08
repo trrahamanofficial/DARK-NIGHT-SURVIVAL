@@ -14,10 +14,18 @@ var is_game_over := false
 
 func _ready() -> void:
     _setup_environment()
-    _start_forest_ambience()
     _make_ground()
-    _make_forest()
-    _make_forest_details()
+    match MapManager.current_map_id:
+        "hospital":
+            _make_hospital_map()
+        "village":
+            _make_village_map()
+        "bunker":
+            _make_bunker_map()
+        _:
+            _start_forest_ambience()
+            _make_forest()
+            _make_forest_details()
     _spawn_player()
     _spawn_monster()
     _spawn_monster("Stalker", Vector3(19.0, 0.1, -23.0), "stalker")
@@ -30,7 +38,8 @@ func _ready() -> void:
     _spawn_resource_pickup(Vector3(-16.0, 0.0, -21.0), "food", 1)
     _spawn_resource_pickup(Vector3(18.0, 0.0, -5.0), "water", 1)
     StoryCampaign.begin_if_new()
-    _make_story_objectives()
+    if MapManager.current_map_id == "forest":
+        _make_story_objectives()
     _make_hud()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -236,6 +245,12 @@ func _show_overlay(heading: String, message: String, show_resume: bool) -> void:
     drink_button.process_mode = Node.PROCESS_MODE_ALWAYS
     drink_button.pressed.connect(_consume_water)
     stack.add_child(drink_button)
+    var map_button := Button.new()
+    map_button.text = "CHANGE MAP"
+    map_button.custom_minimum_size.y = 42
+    map_button.process_mode = Node.PROCESS_MODE_ALWAYS
+    map_button.pressed.connect(_show_map_selector)
+    stack.add_child(map_button)
     var restart := Button.new()
     restart.text = "RESTART GAME"
     restart.custom_minimum_size.y = 44
@@ -838,6 +853,127 @@ func _load_game() -> void:
                 _spawn_resource_pickup(resource_position - Vector3(0.0, 0.55, 0.0), resource_item, resource_amount)
     if player.is_dead:
         _on_player_died()
+
+func _add_map_block(block_name: String, block_position: Vector3, block_size: Vector3, block_color: Color, solid: bool = true) -> void:
+    var root: Node3D = StaticBody3D.new() if solid else Node3D.new()
+    root.name = block_name
+    root.position = block_position
+    var mesh := MeshInstance3D.new()
+    var box := BoxMesh.new()
+    box.size = block_size
+    mesh.mesh = box
+    var material := StandardMaterial3D.new()
+    material.albedo_color = block_color
+    material.roughness = 0.92
+    mesh.material_override = material
+    root.add_child(mesh)
+    if solid:
+        var collision := CollisionShape3D.new()
+        var shape := BoxShape3D.new()
+        shape.size = block_size
+        collision.shape = shape
+        root.add_child(collision)
+    add_child(root)
+
+func _add_map_light(light_position: Vector3, light_color: Color, energy: float, radius: float) -> void:
+    var lamp := OmniLight3D.new()
+    lamp.position = light_position
+    lamp.light_color = light_color
+    lamp.light_energy = energy
+    lamp.omni_range = radius
+    lamp.shadow_enabled = false
+    add_child(lamp)
+
+func _make_hospital_map() -> void:
+    _add_map_block("HospitalOuterNorth", Vector3(0, 2.0, -28), Vector3(42, 4, 1), Color(0.22, 0.25, 0.28))
+    _add_map_block("HospitalOuterSouth", Vector3(0, 2.0, 12), Vector3(42, 4, 1), Color(0.22, 0.25, 0.28))
+    _add_map_block("HospitalOuterWest", Vector3(-21, 2.0, -8), Vector3(1, 4, 40), Color(0.19, 0.22, 0.25))
+    _add_map_block("HospitalOuterEast", Vector3(21, 2.0, -8), Vector3(1, 4, 40), Color(0.19, 0.22, 0.25))
+    for z in [-20.0, -8.0, 4.0]:
+        _add_map_block("HospitalRoomDivider", Vector3(-10, 1.8, z), Vector3(20, 3.6, 0.45), Color(0.28, 0.30, 0.31))
+        _add_map_block("HospitalRoomDivider", Vector3(10, 1.8, z), Vector3(20, 3.6, 0.45), Color(0.28, 0.30, 0.31))
+    for x in [-15.0, 15.0]:
+        for z in [-23.0, -11.0, 1.0, 9.0]:
+            _add_map_block("HospitalBed", Vector3(x, 0.55, z), Vector3(3.2, 0.45, 1.5), Color(0.42, 0.48, 0.51), false)
+    for z in [-23.0, -11.0, 1.0, 9.0]:
+        _add_map_light(Vector3(0, 3.0, z), Color(0.56, 0.72, 0.82), 0.8, 12.0)
+    _add_map_block("HospitalReception", Vector3(0, 0.65, 8), Vector3(8, 1.3, 2), Color(0.24, 0.29, 0.31), false)
+    _add_map_block("HospitalSign", Vector3(0, 3.2, -27.2), Vector3(9, 0.8, 0.25), Color(0.36, 0.08, 0.08), false)
+
+func _make_village_map() -> void:
+    var hut_positions := [Vector3(-14, 0, -18), Vector3(13, 0, -20), Vector3(-18, 0, 4), Vector3(18, 0, 7), Vector3(0, 0, -34), Vector3(0, 0, 25)]
+    for i in range(hut_positions.size()):
+        var pos: Vector3 = hut_positions[i]
+        _add_map_block("VillageHut_%d" % i, pos + Vector3(0, 1.6, 0), Vector3(8, 3.2, 7), Color(0.16, 0.12, 0.085))
+        _add_map_block("VillageRoof_%d" % i, pos + Vector3(0, 3.55, 0), Vector3(9, 0.55, 8), Color(0.09, 0.075, 0.06), false)
+        _add_map_block("VillageDoor_%d" % i, pos + Vector3(0, 1.0, 3.56), Vector3(1.5, 2.0, 0.15), Color(0.045, 0.035, 0.025), false)
+    _add_map_block("VillageWell", Vector3(0, 0.5, -4), Vector3(3.0, 1.0, 3.0), Color(0.24, 0.25, 0.22), false)
+    _add_map_block("VillageSquareMarker", Vector3(0, 0.03, -4), Vector3(15, 0.06, 15), Color(0.10, 0.095, 0.075), false)
+    for x in [-24.0, -8.0, 8.0, 24.0]:
+        _add_map_light(Vector3(x, 3.2, -4), Color(1.0, 0.53, 0.22), 0.65, 10.0)
+    _add_map_block("VillageChurch", Vector3(0, 2.2, 39), Vector3(14, 4.4, 10), Color(0.18, 0.17, 0.15))
+    _add_map_block("VillageChurchTower", Vector3(0, 6.0, 39), Vector3(3, 4, 3), Color(0.12, 0.11, 0.10), false)
+
+func _make_bunker_map() -> void:
+    var wall_color := Color(0.20, 0.23, 0.24)
+    _add_map_block("BunkerWestWall", Vector3(-9, 2.0, -8), Vector3(0.8, 4, 76), wall_color)
+    _add_map_block("BunkerEastWall", Vector3(9, 2.0, -8), Vector3(0.8, 4, 76), wall_color)
+    _add_map_block("BunkerNorthWall", Vector3(0, 2.0, -46), Vector3(18, 4, 0.8), wall_color)
+    _add_map_block("BunkerSouthWall", Vector3(0, 2.0, 30), Vector3(18, 4, 0.8), wall_color)
+    for z in [-34.0, -20.0, -6.0, 8.0, 22.0]:
+        _add_map_block("BunkerSidePartition", Vector3(-4.0, 1.8, z), Vector3(8, 3.6, 0.5), wall_color)
+        _add_map_block("BunkerSidePartition", Vector3(4.0, 1.8, z), Vector3(8, 3.6, 0.5), wall_color)
+        _add_map_light(Vector3(0, 3.3, z), Color(0.42, 0.78, 0.72), 0.72, 11.0)
+    for z in [-39.0, -25.0, -11.0, 3.0, 17.0]:
+        _add_map_block("BunkerCrate", Vector3(-5.8, 0.8, z), Vector3(2.2, 1.6, 2.2), Color(0.20, 0.24, 0.21), false)
+        _add_map_block("BunkerConsole", Vector3(5.5, 1.0, z), Vector3(2.4, 2.0, 1.0), Color(0.10, 0.20, 0.19), false)
+    _add_map_block("BunkerBlastDoor", Vector3(0, 2.0, -45.2), Vector3(7, 3.8, 0.6), Color(0.10, 0.14, 0.15), false)
+
+func _show_map_selector() -> void:
+    if overlay_layer != null:
+        overlay_layer.queue_free()
+    overlay_layer = CanvasLayer.new()
+    overlay_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+    overlay_layer.layer = 22
+    add_child(overlay_layer)
+    var shade := ColorRect.new()
+    shade.color = Color(0.005, 0.008, 0.015, 0.92)
+    shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    overlay_layer.add_child(shade)
+    var panel := PanelContainer.new()
+    panel.process_mode = Node.PROCESS_MODE_ALWAYS
+    panel.custom_minimum_size = Vector2(340, 320)
+    panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+    panel.position = Vector2(-170, -160)
+    overlay_layer.add_child(panel)
+    var stack := VBoxContainer.new()
+    stack.alignment = BoxContainer.ALIGNMENT_CENTER
+    stack.add_theme_constant_override("separation", 10)
+    panel.add_child(stack)
+    var title := Label.new()
+    title.text = "SELECT LOCATION"
+    title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    title.add_theme_font_size_override("font_size", 24)
+    stack.add_child(title)
+    for map_id in ["forest", "hospital", "village", "bunker"]:
+        var button := Button.new()
+        button.text = MapManager.get_map_name(map_id)
+        button.custom_minimum_size.y = 46
+        button.process_mode = Node.PROCESS_MODE_ALWAYS
+        button.pressed.connect(_select_map.bind(map_id))
+        stack.add_child(button)
+    var back := Button.new()
+    back.text = "BACK"
+    back.custom_minimum_size.y = 42
+    back.process_mode = Node.PROCESS_MODE_ALWAYS
+    back.pressed.connect(_show_overlay.bind("PAUSED", "The forest is waiting. Take a breath.", true))
+    stack.add_child(back)
+
+func _select_map(map_id: String) -> void:
+    if not MapManager.select_map(map_id):
+        return
+    get_tree().paused = false
+    get_tree().reload_current_scene()
 
 func _make_story_objectives() -> void:
     _spawn_story_trigger("reach_radio", "ABANDONED RADIO", Vector3(0.0, 0.0, -29.0), Color(0.25, 0.72, 1.0))
