@@ -168,3 +168,46 @@ func _make_hud() -> void:
     crosshair.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0, 0.7))
     layer.add_child(crosshair)
     add_child(layer)
+    if OS.has_feature("mobile") or DisplayServer.is_touchscreen_available():
+        _make_mobile_controls(layer)
+
+func _make_mobile_controls(layer: CanvasLayer) -> void:
+    var screen := get_viewport().get_visible_rect().size
+    var button_size := Vector2(64, 64)
+    var left_x := 24.0
+    var bottom_y := screen.y - 94.0
+    _add_hold_button(layer, "↑", "move_forward", Vector2(left_x + 70, bottom_y - 70), button_size)
+    _add_hold_button(layer, "↓", "move_back", Vector2(left_x + 70, bottom_y + 2), button_size)
+    _add_hold_button(layer, "←", "move_left", Vector2(left_x, bottom_y + 2), button_size)
+    _add_hold_button(layer, "→", "move_right", Vector2(left_x + 140, bottom_y + 2), button_size)
+    _add_hold_button(layer, "RUN", "run", Vector2(screen.x - 166, bottom_y - 4), Vector2(70, 58))
+    var light_button := Button.new()
+    light_button.text = "LIGHT"
+    light_button.position = Vector2(screen.x - 88, bottom_y - 4)
+    light_button.size = Vector2(76, 58)
+    light_button.focus_mode = Control.FOCUS_NONE
+    light_button.add_theme_font_size_override("font_size", 14)
+    light_button.pressed.connect(_toggle_player_flashlight)
+    layer.add_child(light_button)
+
+func _add_hold_button(layer: CanvasLayer, caption: String, action: StringName, pos: Vector2, button_size: Vector2) -> void:
+    var button := Button.new()
+    button.text = caption
+    button.position = pos
+    button.size = button_size
+    button.focus_mode = Control.FOCUS_NONE
+    button.add_theme_font_size_override("font_size", 20)
+    button.button_down.connect(_press_action.bind(action))
+    button.button_up.connect(_release_action.bind(action))
+    layer.add_child(button)
+
+func _press_action(action: StringName) -> void:
+    Input.action_press(action)
+
+func _release_action(action: StringName) -> void:
+    Input.action_release(action)
+
+func _toggle_player_flashlight() -> void:
+    var player := get_node_or_null("Player")
+    if player != null and player.has_method("_toggle_flashlight"):
+        player._toggle_flashlight()
