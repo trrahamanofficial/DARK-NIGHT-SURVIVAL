@@ -1,13 +1,29 @@
-# Separate Admin Dashboard
+# Private Admin / Personal Dashboard (Separate Application)
 
-This directory is reserved for a standalone dashboard application. It is intentionally not bundled into the Godot game client.
+## Non-negotiable visibility rule
+This dashboard is private and separate from the game. It must NEVER appear in:
+- the player dashboard or main game screen;
+- the pause menu, co-op lobby, matchmaking or session screens;
+- game Settings, profile, inventory, maps or any other player-facing screen;
+- Android, Windows or Web game exports.
 
-Security requirements before implementation:
-- Separate deployment origin from the game.
-- Require authenticated admin access and server-side role authorization.
-- Keep privileged secrets in server-side environment variables only.
-- Never store admin passwords or service-role keys in this repository or game client.
-- Record sensitive administrative changes in an audit log.
-- Do not expose public player-facing routes to dashboard-only actions.
+There must be no in-game button, link, route, deep link, overlay, menu item or hint that opens this dashboard. The game client must not bundle this application.
 
-Status: architecture placeholder only; dashboard UI, authentication and backend are scheduled for a later implementation stage.
+## Deployment boundary
+- Deploy this application on its own origin, separate from the game and multiplayer server.
+- Do not add a dashboard link to the game website or game UI.
+- Require authenticated admin login and enforce the admin role on the server for every privileged operation.
+- Use database Row Level Security / server-side authorization; hiding UI controls is not security.
+- Keep service-role keys, database credentials and other privileged secrets on the server only. Never put them in game exports or browser JavaScript.
+- Log privileged changes with actor, timestamp, action and target.
+- Deny access by default. A normal player account must never gain admin access.
+
+## Current implementation status
+This folder is an architecture/security boundary, not a completed dashboard. The UI, authentication integration, protected API and audit log are not yet implemented or deployed. Do not describe the dashboard as live until those pieces and a separate-origin access test pass.
+
+## Release acceptance tests
+1. Search all game scenes, scripts and exported UI for dashboard/admin links and controls; expected result: none.
+2. Open every player screen (main game, pause, co-op lobby, settings, profile, inventory); expected result: no dashboard reference.
+3. Attempt dashboard access while logged out and as a normal player; both must be denied.
+4. Verify an authorized admin can access it only on the separate origin.
+5. Inspect Android, Windows and Web game packages; no dashboard bundle or privileged secret may be present.
