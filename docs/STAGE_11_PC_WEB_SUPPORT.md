@@ -2,7 +2,8 @@
 
 ## Implemented feature pass
 - Existing desktop WASD movement, Shift sprint, mouse-look, Escape pause and F flashlight controls are retained.
-- Existing Settings screen includes persistent keyboard remapping for movement, sprint and flashlight actions.
+- Existing Settings screen includes persistent keyboard remapping for movement, sprint and flashlight actions, plus a saved desktop mouse-sensitivity slider.
+- Auto graphics now selects Low on mobile, Medium on Web and High on desktop.
 - Existing graphics presets support Auto, Low, Medium, High and Ultra; Auto selects Low on mobile and High on desktop.
 - Touch controls are created only when the platform reports mobile/touch input; desktop builds use keyboard and mouse.
 - Web export remains available through the existing Web preset and CI workflow.
