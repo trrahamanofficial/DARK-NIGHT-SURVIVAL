@@ -11,6 +11,10 @@ var resources_label: Label
 var story_label: Label
 var overlay_layer: CanvasLayer
 var is_game_over := false
+var survival_wave := 1
+var survival_wave_timer := 35.0
+var survival_wave_label: Label
+var mode_status_label: Label
 
 func _ready() -> void:
     _setup_environment()
@@ -27,20 +31,54 @@ func _ready() -> void:
             _make_forest()
             _make_forest_details()
     _spawn_player()
-    _spawn_monster()
-    _spawn_monster("Stalker", Vector3(19.0, 0.1, -23.0), "stalker")
-    _spawn_monster("Brute", Vector3(-20.0, 0.1, -23.0), "brute")
+    _spawn_mode_enemies()
     _spawn_medkit(Vector3(5.0, 0.0, -7.0))
     _spawn_medkit(Vector3(-8.0, 0.0, -15.0))
-    _spawn_resource_pickup(Vector3(8.0, 0.0, -11.0), "cloth", 2)
-    _spawn_resource_pickup(Vector3(-11.0, 0.0, -8.0), "herb", 2)
-    _spawn_resource_pickup(Vector3(13.0, 0.0, -19.0), "scrap", 2)
-    _spawn_resource_pickup(Vector3(-16.0, 0.0, -21.0), "food", 1)
-    _spawn_resource_pickup(Vector3(18.0, 0.0, -5.0), "water", 1)
-    StoryCampaign.begin_if_new()
-    if MapManager.current_map_id == "forest":
-        _make_story_objectives()
+    _spawn_resource_pickup(Vector3(8.0, 0.0, -11.0), "cloth", ModeManager.scale_resource_amount(2))
+    _spawn_resource_pickup(Vector3(-11.0, 0.0, -8.0), "herb", ModeManager.scale_resource_amount(2))
+    _spawn_resource_pickup(Vector3(13.0, 0.0, -19.0), "scrap", ModeManager.scale_resource_amount(2))
+    _spawn_resource_pickup(Vector3(-16.0, 0.0, -21.0), "food", ModeManager.scale_resource_amount(1))
+    _spawn_resource_pickup(Vector3(18.0, 0.0, -5.0), "water", ModeManager.scale_resource_amount(1))
+    if ModeManager.current_mode == "story_campaign":
+        StoryCampaign.begin_if_new()
+        if MapManager.current_map_id == "forest":
+            _make_story_objectives()
     _make_hud()
+
+func _process(delta: float) -> void:
+    if get_tree().paused or is_game_over:
+        return
+    if ModeManager.current_mode == "survival":
+        survival_wave_timer -= delta
+        if survival_wave_timer <= 0.0:
+            survival_wave += 1
+            survival_wave_timer = maxf(14.0, 35.0 - float(survival_wave) * 1.5)
+            _spawn_survival_wave()
+
+func _spawn_mode_enemies() -> void:
+    if ModeManager.current_mode == "free_explore":
+        return
+    _spawn_monster()
+    if ModeManager.current_mode == "nightmare":
+        _spawn_monster("Stalker", Vector3(19.0, 0.1, -23.0), "stalker")
+        _spawn_monster("Brute", Vector3(-20.0, 0.1, -23.0), "brute")
+        _spawn_monster("Stalker_2", Vector3(-18.0, 0.1, 18.0), "stalker")
+    elif ModeManager.current_mode == "survival":
+        _spawn_monster("Stalker", Vector3(19.0, 0.1, -23.0), "stalker")
+    else:
+        _spawn_monster("Stalker", Vector3(19.0, 0.1, -23.0), "stalker")
+        _spawn_monster("Brute", Vector3(-20.0, 0.1, -23.0), "brute")
+
+func _spawn_survival_wave() -> void:
+    var player := get_node_or_null("Player")
+    if player == null or player.is_dead:
+        return
+    var archetype := "stalker" if survival_wave % 3 == 0 else ("brute" if survival_wave % 3 == 2 else "wanderer")
+    var spawn_pos := player.global_position + Vector3(18.0, 0.1, 16.0)
+    var enemy_name := "Wave_%d_Enemy_%d" % [survival_wave, get_tree().get_nodes_in_group("enemies").size() + 1]
+    _spawn_monster(enemy_name, spawn_pos, archetype)
+    if survival_wave_label != null:
+        survival_wave_label.text = "SURVIVAL WAVE %d  |  NEXT THREAT IN %ds" % [survival_wave, roundi(survival_wave_timer)]
 
 func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
@@ -245,6 +283,12 @@ func _show_overlay(heading: String, message: String, show_resume: bool) -> void:
     drink_button.process_mode = Node.PROCESS_MODE_ALWAYS
     drink_button.pressed.connect(_consume_water)
     stack.add_child(drink_button)
+    var mode_button := Button.new()
+    mode_button.text = "GAME MODE & DIFFICULTY"
+    mode_button.custom_minimum_size.y = 42
+    mode_button.process_mode = Node.PROCESS_MODE_ALWAYS
+    mode_button.pressed.connect(_show_mode_selector)
+    stack.add_child(mode_button)
     var map_button := Button.new()
     map_button.text = "CHANGE MAP"
     map_button.custom_minimum_size.y = 42
@@ -584,6 +628,17 @@ func _make_hud() -> void:
     story_label.add_theme_color_override("font_color", Color(0.82, 0.88, 1.0, 0.96))
     story_label.add_theme_font_size_override("font_size", 13)
     layer.add_child(story_label)
+    mode_status_label = Label.new()
+    mode_status_label.position = Vector2(20, 258)
+    mode_status_label.add_theme_font_size_override("font_size", 12)
+    mode_status_label.text = ModeManager.get_mode_name() + "  •  " + ModeManager.get_difficulty_name()
+    layer.add_child(mode_status_label)
+    survival_wave_label = Label.new()
+    survival_wave_label.position = Vector2(20, 278)
+    survival_wave_label.add_theme_font_size_override("font_size", 12)
+    survival_wave_label.visible = ModeManager.current_mode == "survival"
+    survival_wave_label.text = "SURVIVAL WAVE 1"
+    layer.add_child(survival_wave_label)
     StoryCampaign.campaign_updated.connect(_on_story_campaign_updated)
     StoryCampaign.campaign_completed.connect(_on_story_campaign_completed)
     _on_story_campaign_updated(StoryCampaign.get_mission_title(), StoryCampaign.get_objective_text(), StoryCampaign.get_progress_text())
@@ -968,6 +1023,88 @@ func _show_map_selector() -> void:
     back.process_mode = Node.PROCESS_MODE_ALWAYS
     back.pressed.connect(_show_overlay.bind("PAUSED", "The forest is waiting. Take a breath.", true))
     stack.add_child(back)
+
+func _show_mode_selector() -> void:
+    if overlay_layer != null:
+        overlay_layer.queue_free()
+    overlay_layer = CanvasLayer.new()
+    overlay_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+    overlay_layer.layer = 23
+    add_child(overlay_layer)
+    var shade := ColorRect.new()
+    shade.color = Color(0.005, 0.008, 0.015, 0.93)
+    shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    overlay_layer.add_child(shade)
+    var panel := PanelContainer.new()
+    panel.process_mode = Node.PROCESS_MODE_ALWAYS
+    panel.custom_minimum_size = Vector2(340, 410)
+    panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+    panel.position = Vector2(-170, -205)
+    overlay_layer.add_child(panel)
+    var scroll := ScrollContainer.new()
+    panel.add_child(scroll)
+    var stack := VBoxContainer.new()
+    stack.add_theme_constant_override("separation", 10)
+    stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    scroll.add_child(stack)
+    var title := Label.new()
+    title.text = "GAME MODE & DIFFICULTY"
+    title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    title.add_theme_font_size_override("font_size", 21)
+    stack.add_child(title)
+    var mode_label := Label.new()
+    mode_label.text = "SELECT GAME MODE"
+    stack.add_child(mode_label)
+    var mode_picker := OptionButton.new()
+    var mode_ids := ["story_campaign", "survival", "free_explore", "nightmare", "custom", "coop"]
+    for mode_id in mode_ids:
+        var mode_name := ModeManager.get_mode_name_for(mode_id)
+        if mode_id == "coop":
+            mode_name += " — COMING SOON"
+        mode_picker.add_item(mode_name)
+    mode_picker.select(maxi(0, mode_ids.find(ModeManager.current_mode)))
+    mode_picker.set_meta("mode_ids", mode_ids)
+    stack.add_child(mode_picker)
+    var difficulty_label := Label.new()
+    difficulty_label.text = "DIFFICULTY"
+    stack.add_child(difficulty_label)
+    var difficulty_picker := OptionButton.new()
+    var difficulty_ids := ["easy", "normal", "hard", "nightmare", "dynamic"]
+    for difficulty_id in difficulty_ids:
+        difficulty_picker.add_item(ModeManager.get_difficulty_name_for(difficulty_id))
+    difficulty_picker.select(maxi(0, difficulty_ids.find(ModeManager.current_difficulty)))
+    difficulty_picker.set_meta("difficulty_ids", difficulty_ids)
+    stack.add_child(difficulty_picker)
+    var note := Label.new()
+    note.text = "Co-op is not available yet. Custom mode currently uses the selected difficulty with balanced default rules."
+    note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    stack.add_child(note)
+    var apply := Button.new()
+    apply.text = "APPLY & RESTART"
+    apply.custom_minimum_size.y = 46
+    apply.process_mode = Node.PROCESS_MODE_ALWAYS
+    apply.pressed.connect(_apply_mode_selection.bind(mode_picker, difficulty_picker))
+    stack.add_child(apply)
+    var back := Button.new()
+    back.text = "BACK"
+    back.custom_minimum_size.y = 40
+    back.process_mode = Node.PROCESS_MODE_ALWAYS
+    back.pressed.connect(_show_overlay.bind("PAUSED", "Game paused.", true))
+    stack.add_child(back)
+
+func _apply_mode_selection(mode_picker: OptionButton, difficulty_picker: OptionButton) -> void:
+    var mode_ids: Array = mode_picker.get_meta("mode_ids", [])
+    var difficulty_ids: Array = difficulty_picker.get_meta("difficulty_ids", [])
+    var selected_mode := str(mode_ids[mode_picker.selected])
+    var selected_difficulty := str(difficulty_ids[difficulty_picker.selected])
+    if selected_mode == "coop":
+        _show_overlay("CO-OP COMING SOON", "Online co-op needs a dedicated multiplayer server. It is not enabled in this build.", true)
+        get_tree().paused = true
+        return
+    ModeManager.set_mode(selected_mode)
+    ModeManager.set_difficulty(selected_difficulty)
+    get_tree().paused = false
+    get_tree().reload_current_scene()
 
 func _select_map(map_id: String) -> void:
     if not MapManager.select_map(map_id):
