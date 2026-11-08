@@ -9,6 +9,7 @@ var quality := "Auto"
 var swapped := false
 var touch_opacity := 0.8
 var touch_sensitivity := 1.0
+var mouse_sensitivity := 1.0
 var panel: PanelContainer
 var arrange_mode := false
 var dragging_control: Control
@@ -72,6 +73,7 @@ func _load_settings() -> void:
     swapped = bool(cfg.get_value("controls", "swapped", false))
     touch_opacity = float(cfg.get_value("controls", "opacity", 0.8))
     touch_sensitivity = float(cfg.get_value("controls", "sensitivity", 1.0))
+    mouse_sensitivity = float(cfg.get_value("controls", "mouse_sensitivity", 1.0))
     saved_layout = cfg.get_value("controls", "layout", {})
     for action in TOUCH_ACTIONS:
         var key_code := int(cfg.get_value("keys", action, -1))
@@ -103,6 +105,8 @@ func _toggle_panel() -> void:
     _add_slider(box, "Touch control size", 0.7, 1.5, 0.1, ui_scale, _on_scale_changed)
     _add_slider(box, "Touch control opacity", 0.25, 1.0, 0.05, touch_opacity, _on_opacity_changed)
     _add_slider(box, "Camera look sensitivity", 0.5, 2.0, 0.1, touch_sensitivity, _on_sensitivity_changed)
+    if not OS.has_feature("mobile"):
+        _add_slider(box, "PC mouse sensitivity", 0.5, 2.0, 0.1, mouse_sensitivity, _on_mouse_sensitivity_changed)
 
     var quality_label := Label.new()
     quality_label.text = "Graphics quality"
@@ -212,6 +216,11 @@ func _on_sensitivity_changed(value: float) -> void:
     _save_settings()
     _apply_control_settings()
 
+func _on_mouse_sensitivity_changed(value: float) -> void:
+    mouse_sensitivity = value
+    _save_settings()
+    _apply_control_settings()
+
 func _on_quality_selected(index: int) -> void:
     quality = ["Auto", "Low", "Medium", "High", "Ultra"][index]
     _save_settings()
@@ -245,11 +254,13 @@ func _apply_control_settings() -> void:
         player.set_touch_sensitivity_multiplier(touch_sensitivity)
     if player and player.has_method("set_touch_look_on_right"):
         player.set_touch_look_on_right(not swapped)
+    if player and player.has_method("set_mouse_sensitivity_multiplier"):
+        player.set_mouse_sensitivity_multiplier(mouse_sensitivity)
 
 func _apply_quality() -> void:
     var selected := quality
     if selected == "Auto":
-        selected = "Low" if OS.has_feature("mobile") else "High"
+        selected = "Low" if OS.has_feature("mobile") else ("Medium" if OS.has_feature("web") else "High")
     var scene := get_tree().current_scene
     if scene and scene.has_method("apply_graphics_quality"):
         scene.apply_graphics_quality(selected)
@@ -286,6 +297,7 @@ func _save_settings() -> void:
     cfg.set_value("controls", "swapped", swapped)
     cfg.set_value("controls", "opacity", touch_opacity)
     cfg.set_value("controls", "sensitivity", touch_sensitivity)
+    cfg.set_value("controls", "mouse_sensitivity", mouse_sensitivity)
     cfg.set_value("controls", "layout", saved_layout)
     cfg.set_value("graphics", "quality", quality)
     for action in TOUCH_ACTIONS:
