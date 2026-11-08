@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "settings": {
+    "game_mode": "story_campaign",
+    "difficulty": "normal",
+    "graphics_quality": "auto",
+    "master_volume": 0.8,
+    "music_volume": 0.65,
+    "sfx_volume": 0.85,
+    "mouse_sensitivity": 1,
+    "touch_sensitivity": 1,
+    "touch_button_scale": 1,
+    "touch_button_opacity": 0.8,
+    "swap_touch_sides": false,
+    "show_subtitles": true,
+    "language": "en"
+  },
+  "storage": {
+    "local_path": "user://dark_night_settings.cfg",
+    "cloud_sync": "future_optional"
+  },
+  "ads": {
+    "enabled": false,
+    "policy": "disabled_for_initial_release"
+  },
+  "authentication": {
+    "player_login_required": false
+  },
+  "implementation_status": "configuration_only"
+}
