@@ -360,6 +360,7 @@ func _make_mobile_controls(layer: CanvasLayer) -> void:
     joystick.size = Vector2(176.0, 176.0)
     joystick.add_to_group("touch_controls")
     joystick.set_meta("base_pos", joystick.position)
+    joystick.set_meta("base_ratio", Vector2(joystick.position.x / maxf(1.0, screen.x), joystick.position.y / maxf(1.0, screen.y)))
     joystick.set_meta("base_size", joystick.size)
     joystick.connect("vector_changed", Callable(self, "_on_mobile_move_changed"))
     layer.add_child(joystick)
@@ -370,6 +371,7 @@ func _make_mobile_controls(layer: CanvasLayer) -> void:
     light_button.text = "LIGHT"
     light_button.add_to_group("touch_controls")
     light_button.set_meta("base_pos", Vector2(screen.x - 92.0, bottom_y - 58.0))
+    light_button.set_meta("base_ratio", Vector2((screen.x - 92.0) / maxf(1.0, screen.x), (bottom_y - 58.0) / maxf(1.0, screen.y)))
     light_button.set_meta("base_size", Vector2(76, 54))
     light_button.position = light_button.get_meta("base_pos")
     light_button.size = light_button.get_meta("base_size")
@@ -380,6 +382,7 @@ func _make_mobile_controls(layer: CanvasLayer) -> void:
     heal_button.text = "HEAL"
     heal_button.add_to_group("touch_controls")
     heal_button.set_meta("base_pos", Vector2(screen.x - 92.0, bottom_y - 120.0))
+    heal_button.set_meta("base_ratio", Vector2((screen.x - 92.0) / maxf(1.0, screen.x), (bottom_y - 120.0) / maxf(1.0, screen.y)))
     heal_button.set_meta("base_size", Vector2(76, 54))
     heal_button.position = heal_button.get_meta("base_pos")
     heal_button.size = heal_button.get_meta("base_size")
@@ -399,6 +402,8 @@ func _add_hold_button(layer: CanvasLayer, caption: String, action: StringName, p
     button.size = button_size
     button.add_to_group("touch_controls")
     button.set_meta("base_pos", pos)
+    var viewport_size := get_viewport().get_visible_rect().size
+    button.set_meta("base_ratio", Vector2(pos.x / maxf(1.0, viewport_size.x), pos.y / maxf(1.0, viewport_size.y)))
     button.set_meta("base_size", button_size)
     button.focus_mode = Control.FOCUS_NONE
     button.add_theme_font_size_override("font_size", 20)
