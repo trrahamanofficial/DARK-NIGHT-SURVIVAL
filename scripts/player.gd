@@ -2,6 +2,7 @@ extends CharacterBody3D
 
 signal health_changed(current: float, maximum: float)
 signal stamina_changed(current: float, maximum: float)
+signal inventory_changed(medkit_count: int)
 signal player_died
 
 @export var walk_speed := 4.2
@@ -13,10 +14,11 @@ signal player_died
 @export var max_stamina := 100.0
 @export var stamina_drain_per_second := 22.0
 @export var stamina_regen_per_second := 15.0
-@export var health_regen_delay := 0.0
+@export var medkit_heal_amount := 40.0
 
 var health := 100.0
 var stamina := 100.0
+var medkits := 0
 var look_pitch := 0.0
 var flashlight_on := true
 var is_dead := false
@@ -30,6 +32,7 @@ func _ready() -> void:
     stamina = max_stamina
     health_changed.emit(health, max_health)
     stamina_changed.emit(stamina, max_stamina)
+    inventory_changed.emit(medkits)
     if not OS.has_feature("mobile"):
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
@@ -38,8 +41,7 @@ func _process(delta: float) -> void:
         return
     if damage_cooldown > 0.0:
         damage_cooldown = maxf(0.0, damage_cooldown - delta)
-    var wants_run := Input.is_action_pressed("run") and stamina > 0.5
-    if wants_run:
+    if Input.is_action_pressed("run") and stamina > 0.5:
         stamina = maxf(0.0, stamina - stamina_drain_per_second * delta)
     else:
         stamina = minf(max_stamina, stamina + stamina_regen_per_second * delta)
@@ -63,6 +65,8 @@ func _unhandled_input(event: InputEvent) -> void:
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
     elif event is InputEventKey and event.pressed and event.keycode == KEY_F:
         _toggle_flashlight()
+    elif event is InputEventKey and event.pressed and event.keycode == KEY_H:
+        use_medkit()
 
 func _look(delta_position: Vector2, sensitivity: float) -> void:
     rotate_y(-delta_position.x * sensitivity)
@@ -93,6 +97,19 @@ func restore_stamina(amount: float) -> void:
         return
     stamina = minf(max_stamina, stamina + amount)
     stamina_changed.emit(stamina, max_stamina)
+
+func add_medkit(count: int = 1) -> void:
+    if is_dead or count <= 0:
+        return
+    medkits += count
+    inventory_changed.emit(medkits)
+
+func use_medkit() -> void:
+    if is_dead or medkits <= 0 or health >= max_health:
+        return
+    medkits -= 1
+    heal(medkit_heal_amount)
+    inventory_changed.emit(medkits)
 
 func _die() -> void:
     if is_dead:
