@@ -20,7 +20,7 @@ func _ready() -> void:
     open_button.z_index = 20
     open_button.pressed.connect(_toggle_panel)
     add_child(open_button)
-    _apply_control_settings()
+    call_deferred("_apply_control_settings")
     _apply_quality()
 
 func _toggle_panel() -> void:
