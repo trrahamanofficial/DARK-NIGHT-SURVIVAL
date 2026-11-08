@@ -20,7 +20,7 @@ func _physics_process(delta: float) -> void:
         return
     if player == null:
         player = get_tree().current_scene.get_node_or_null("Player")
-    if player == null or (player.has_method("is_dead") and player.is_dead):
+    if player == null or bool(player.get("is_dead")):
         velocity.x = move_toward(velocity.x, 0.0, 4.0 * delta)
         velocity.z = move_toward(velocity.z, 0.0, 4.0 * delta)
         velocity.y = -0.5
