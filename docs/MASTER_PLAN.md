@@ -77,3 +77,14 @@ The current playable content is an early procedural Dark Forest prototype. Exist
 - Dashboard is not imported, linked, bundled or routed from the Godot game. The game UI remains independent; the co-op lobby contains only multiplayer controls.
 - Strict owner requirement: dashboard must never appear in player dashboard, lobby, pause menu, Settings, profile, inventory, maps or any game export.
 - Remaining before production: run SQL on the owner's Supabase project, verify the existing profiles schema and admin role, deploy the folder on a separate origin, configure Supabase Auth redirect allow-list, test admin/player/anonymous denial and setting/audit operations. No provider secrets are stored in this browser dashboard; server-side secret management is a separate future task.
+
+
+## Stage 14 — QA status (2026-11-08)
+- Added `docs/QA_STATUS.md` with exact CI export run IDs, source commit, static isolation checks and remaining release gates.
+- Latest co-op client code commit `5f97d810b68d032380275f62630fb69f0409d0ec` passed Android APK #75, Windows PC #9 and Web #10.
+- Static inspection confirms the Admin Dashboard is not referenced by the Godot autoload configuration or player pause/co-op UI; `admin-dashboard/.gdignore` excludes its standalone files from Godot import/export.
+- Stage 14 is **not complete**: physical-device gameplay, desktop/browser runtime, save/load, performance, and real multiplayer/server tests remain unavailable in this CI-only workflow.
+
+## Stage 15 — Release packaging
+- **Not started / release blocked.** Do not call the current CI APK a final release.
+- Release requires Stage 14 runtime QA, a real Android install/launch check, secure signing configuration, and resolution of all release-gate failures.
