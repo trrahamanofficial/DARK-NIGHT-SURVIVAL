@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>DARK NIGHT — Private Admin</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<main class="shell">
+  <header><div class="mark">DN</div><div><p class="eyebrow">DARK NIGHT: SURVIVAL</p><h1>Private Admin</h1><p class="muted">Independent control panel · not part of the game</p></div><span id="session-badge" class="badge">SIGNED OUT</span></header>
+  <section id="config-panel" class="panel">
+    <h2>Connect secure project</h2><p class="muted">Use your Supabase Project URL and public anon key. Never enter a service-role key here.</p>
+    <label>Supabase Project URL<input id="project-url" type="url" placeholder="https://your-project.supabase.co" autocomplete="url"></label>
+    <label>Supabase anon / publishable key<textarea id="anon-key" rows="2" placeholder="Public anon key only"></textarea></label>
+    <button id="connect" class="primary">Connect</button><p id="config-status" class="status" aria-live="polite"></p>
+  </section>
+  <section id="login-panel" class="panel hidden">
+    <h2>Administrator sign in</h2><p class="muted">Only accounts with the server-verified admin role can enter.</p>
+    <label>Email<input id="email" type="email" autocomplete="username"></label>
+    <label>Password<input id="password" type="password" autocomplete="current-password"></label>
+    <button id="login" class="primary">Sign in securely</button><p id="login-status" class="status" aria-live="polite"></p>
+  </section>
+  <section id="app-panel" class="hidden">
+    <div class="toolbar panel"><div><p class="eyebrow">AUTHORIZED SESSION</p><h2 id="admin-email">Admin</h2></div><button id="logout" class="danger">Sign out</button></div>
+    <div class="stats"><article class="panel"><span class="muted">ACCESS</span><strong>ADMIN ONLY</strong></article><article class="panel"><span class="muted">GAME CLIENT</span><strong>SEPARATE</strong></article><article class="panel"><span class="muted">PAYMENTS</span><strong>DISABLED</strong></article></div>
+    <section class="panel"><div class="section-head"><div><h2>Game configuration</h2><p class="muted">Store non-secret JSON settings. Never store passwords, API keys or tokens here.</p></div></div>
+      <label>Setting key<input id="setting-key" maxlength="80" placeholder="e.g. maintenance_notice"></label>
+      <label>JSON value<textarea id="setting-value" rows="5" placeholder='{"enabled":false,"message":"Coming soon"}'></textarea></label>
+      <div class="actions"><button id="save-setting" class="primary">Save setting</button><button id="refresh-settings">Refresh list</button></div>
+      <p id="settings-status" class="status" aria-live="polite"></p><div id="settings-list" class="table-wrap"><p class="muted">No settings loaded.</p></div>
+    </section>
+    <section class="panel"><div class="section-head"><div><h2>Admin audit log</h2><p class="muted">Recent privileged actions. Entries are append-only.</p></div><button id="refresh-audit">Refresh</button></div><div id="audit-list" class="table-wrap"><p class="muted">No audit entries loaded.</p></div></section>
+  </section>
+  <footer>Private application · deny by default · never link this panel from the game</footer>
+</main>
+<script type="module" src="./app.js"></script>
+</body></html>
