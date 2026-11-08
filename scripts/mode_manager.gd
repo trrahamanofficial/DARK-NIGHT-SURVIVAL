@@ -11,6 +11,8 @@ const DIFFICULTY := {
 }
 var current_mode := "story_campaign"
 var current_difficulty := "normal"
+var custom_threat := 1.0
+var custom_resources := 1.0
 
 func _ready() -> void:
  var cfg := ConfigFile.new()
@@ -19,6 +21,8 @@ func _ready() -> void:
   var saved_difficulty := str(cfg.get_value("game","difficulty","normal"))
   if MODE_NAMES.has(saved_mode): current_mode = saved_mode
   if DIFFICULTY_NAMES.has(saved_difficulty): current_difficulty = saved_difficulty
+  custom_threat = clampf(float(cfg.get_value("custom","threat",1.0)),0.5,2.0)
+  custom_resources = clampf(float(cfg.get_value("custom","resources",1.0)),0.5,2.0)
  if current_mode == "coop": current_mode = "story_campaign"
 
 func get_mode_name() -> String:
@@ -43,29 +47,40 @@ func set_difficulty(difficulty_id: String) -> bool:
  current_difficulty = difficulty_id
  return _save()
 
+func set_custom_rules(threat: float, resources: float) -> bool:
+ custom_threat = clampf(threat,0.5,2.0)
+ custom_resources = clampf(resources,0.5,2.0)
+ return _save()
+
 func get_enemy_damage_multiplier(player_health: float = 100.0) -> float:
  var value := float(DIFFICULTY[current_difficulty]["damage"])
- if current_difficulty == "dynamic":
+ if current_mode == "custom": value = custom_threat
+ elif current_difficulty == "dynamic":
   value = 0.82 if player_health < 35.0 else (1.18 if player_health > 80.0 else 1.0)
  if current_mode == "nightmare": value *= 1.35
  return value
 
 func get_enemy_detection_multiplier() -> float:
  var value := float(DIFFICULTY[current_difficulty]["detection"])
- if current_difficulty == "dynamic": value = 1.0
+ if current_mode == "custom": value = lerpf(0.75,1.5,(custom_threat-0.5)/1.5)
+ elif current_difficulty == "dynamic": value = 1.0
  if current_mode == "nightmare": value *= 1.2
  return value
 
 func get_enemy_health_multiplier() -> float:
  var value := float(DIFFICULTY[current_difficulty]["health"])
+ if current_mode == "custom": value = custom_threat
  if current_mode == "nightmare": value *= 1.2
  return value
 
 func scale_resource_amount(amount: int) -> int:
- return maxi(1, roundi(float(amount) * float(DIFFICULTY[current_difficulty]["resources"])))
+ var multiplier := custom_resources if current_mode == "custom" else float(DIFFICULTY[current_difficulty]["resources"])
+ return maxi(1, roundi(float(amount) * multiplier))
 
 func _save() -> bool:
  var cfg := ConfigFile.new()
  cfg.set_value("game","mode",current_mode)
  cfg.set_value("game","difficulty",current_difficulty)
+ cfg.set_value("custom","threat",custom_threat)
+ cfg.set_value("custom","resources",custom_resources)
  return cfg.save("user://game_mode.cfg") == OK
