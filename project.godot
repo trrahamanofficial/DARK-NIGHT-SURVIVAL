@@ -22,6 +22,7 @@ SaveManager="*res://scripts/save_manager.gd"
 StoryCampaign="*res://scripts/story_campaign.gd"
 MapManager="*res://scripts/map_manager.gd"
 ModeManager="*res://scripts/mode_manager.gd"
+CoopClient="*res://scripts/coop_client.gd"
 
 [input]
 move_forward={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":87)]}
