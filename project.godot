@@ -19,6 +19,7 @@ environment/defaults/default_clear_color=Color(0.008, 0.012, 0.018, 1)
 
 [autoload]
 SaveManager="*res://scripts/save_manager.gd"
+StoryCampaign="*res://scripts/story_campaign.gd"
 
 [input]
 move_forward={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":87)]}
