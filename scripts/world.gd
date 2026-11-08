@@ -19,6 +19,7 @@ func _ready() -> void:
     _make_forest_details()
     _spawn_player()
     _spawn_monster()
+    _spawn_monster("Stalker", Vector3(19.0, 0.1, -23.0), "stalker")
     _spawn_medkit(Vector3(5.0, 0.0, -7.0))
     _spawn_medkit(Vector3(-8.0, 0.0, -15.0))
     _spawn_resource_pickup(Vector3(8.0, 0.0, -11.0), "cloth", 2)
@@ -463,11 +464,12 @@ func _spawn_player() -> void:
     camera.add_child(light)
     add_child(player)
 
-func _spawn_monster() -> void:
+func _spawn_monster(enemy_name: String = "Wanderer", spawn_position: Vector3 = Vector3(0.0, 0.1, -17.0), enemy_kind: String = "wanderer") -> void:
     var monster := CharacterBody3D.new()
-    monster.name = "Wanderer"
+    monster.name = enemy_name
     monster.set_script(MONSTER_SCRIPT)
-    monster.position = Vector3(0, 0.1, -17)
+    monster.position = spawn_position
+    monster.configure_archetype(enemy_kind)
     var body := MeshInstance3D.new()
     var capsule := CapsuleMesh.new()
     capsule.radius = 0.48
@@ -701,7 +703,10 @@ func _save_game() -> void:
                 "item": str(pickup.get_meta("item")),
                 "amount": int(pickup.get_meta("amount"))
             })
-    var monster := get_node_or_null("Wanderer")
+    var enemy_positions: Dictionary = {}
+    for enemy in get_tree().get_nodes_in_group("enemies"):
+        if is_instance_valid(enemy):
+            enemy_positions[enemy.name] = _vector3_to_array(enemy.position)
     var payload := {
         "player_position": _vector3_to_array(player.position),
         "player_yaw": player.rotation.y,
@@ -711,7 +716,7 @@ func _save_game() -> void:
         "medkits": int(player.medkits),
         "resources": player.resources.duplicate(true),
         "flashlight_on": bool(player.flashlight_on),
-        "monster_position": _vector3_to_array(monster.position) if monster else [],
+        "enemy_positions": enemy_positions,
         "medkit_pickups": pickup_positions,
         "resource_pickups": resource_pickups
     }
@@ -756,10 +761,18 @@ func _load_game() -> void:
     player.stamina_changed.emit(player.stamina, player.max_stamina)
     player.inventory_changed.emit(player.medkits)
     player.resources_changed.emit(player.resources.duplicate(true))
-    var monster := get_node_or_null("Wanderer")
-    if monster and payload.has("monster_position"):
-        monster.position = _array_to_vector3(payload.get("monster_position", []), monster.position)
-        monster.velocity = Vector3.ZERO
+    var saved_enemies: Variant = payload.get("enemy_positions", {})
+    if typeof(saved_enemies) == TYPE_DICTIONARY:
+        for enemy in get_tree().get_nodes_in_group("enemies"):
+            if is_instance_valid(enemy) and saved_enemies.has(enemy.name):
+                enemy.position = _array_to_vector3(saved_enemies[enemy.name], enemy.position)
+                enemy.velocity = Vector3.ZERO
+    elif payload.has("monster_position"):
+        # Backward compatibility for saves created before multiple enemy support.
+        var legacy_enemy := get_node_or_null("Wanderer")
+        if legacy_enemy != null:
+            legacy_enemy.position = _array_to_vector3(payload.get("monster_position", []), legacy_enemy.position)
+            legacy_enemy.velocity = Vector3.ZERO
     for pickup in get_tree().get_nodes_in_group("save_pickups"):
         if is_instance_valid(pickup):
             pickup.queue_free()
