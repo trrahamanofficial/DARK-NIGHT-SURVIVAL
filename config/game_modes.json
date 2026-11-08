@@ -28,7 +28,8 @@
       "name": "Co-op Mode",
       "players": "1-4",
       "online_required": true,
-      "description": "Online cooperative play; requires an authoritative multiplayer server."
+      "description": "Online cooperative play; requires an authoritative multiplayer server.",
+      "availability": "coming_soon"
     },
     {
       "id": "nightmare",
@@ -46,5 +47,5 @@
     }
   ],
   "default_mode": "story_campaign",
-  "implementation_status": "configuration_only"
+  "implementation_status": "first_playable_pass"
 }
