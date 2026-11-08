@@ -63,20 +63,12 @@ The current playable content is an early procedural Dark Forest prototype. Exist
 - Stage 12: co-op multiplayer integration foundation implemented using Nakama + PostgreSQL. Device authentication now passes the Nakama HTTP API key using the documented `http_key` query parameter (corrected from an unsupported Basic-auth header). Added Docker Compose deployment scaffold, server-authoritative four-player match module and authenticated match-creation RPC; added Godot device-auth/WebSocket client transport, create/join/input/state/leave APIs and endpoint configuration. No public server is deployed; pause-menu connect/create/join/disconnect panel and basic remote survivor state presentation have been added; smooth interpolation, invite/ready flow, reconnect, authoritative combat, security hardening and multi-device tests remain. Co-op stays Coming Soon.
 
 
-## Stage 13 — Private Dashboard Isolation (2026-11-08)
-- Confirmed the private Admin/Personal Dashboard is a separate application boundary and is not part of the Godot game.
-- Updated `admin-dashboard/README.md` with a strict rule: no dashboard entry, link, route, overlay, deep link or dashboard files in the player dashboard, pause menu, co-op lobby, settings, profile, inventory, maps or any game export.
-- Updated the Stage 12 co-op document to explicitly prohibit any dashboard UI or link in the game lobby.
-- Repository source inspection found no Admin Dashboard or Personal Dashboard controls/references in `scripts/world.gd`; the pause menu contains only the Co-op Multiplayer entry.
-- **Stage 13 is not a completed dashboard product yet.** The separate UI, admin authentication, server-side role authorization, protected API and audit log still need implementation and deployment. The README lists security acceptance tests. Do not mark the dashboard live until these gates pass.
-
-
 ## Stage 13 — Private Admin Dashboard foundation (2026-11-08)
 - Added a separate responsive static application under `admin-dashboard/` with Supabase email/password sign-in, profile-role check (`profiles.role = 'admin'`), non-secret JSON game-settings CRUD, and an audit-log viewer.
 - Added `supabase_admin_setup.sql` with a security-definer admin-role check, RLS policies, authenticated grants, and append-only client audit-log access.
 - Dashboard is not imported, linked, bundled or routed from the Godot game. The game UI remains independent; the co-op lobby contains only multiplayer controls.
 - Strict owner requirement: dashboard must never appear in player dashboard, lobby, pause menu, Settings, profile, inventory, maps or any game export.
-- Remaining before production: run SQL on the owner's Supabase project, verify the existing profiles schema and admin role, deploy the folder on a separate origin, configure Supabase Auth redirect allow-list, test admin/player/anonymous denial and setting/audit operations. No provider secrets are stored in this browser dashboard; server-side secret management is a separate future task.
+- This is a first functional foundation, not a deployed production dashboard. Remaining before production: verify the existing `profiles` schema, run SQL on the owner's Supabase project, verify the admin role, deploy the folder on a separate origin, configure Supabase Auth redirect allow-list, and test anonymous/player denial plus admin settings/audit operations. No provider secrets are stored in this browser dashboard; server-side secret management is a separate future task.
 
 
 ## Stage 14 — QA status (2026-11-08)
