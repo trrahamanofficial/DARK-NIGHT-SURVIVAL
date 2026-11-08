@@ -472,21 +472,21 @@ func _spawn_monster(enemy_name: String = "Wanderer", spawn_position: Vector3 = V
     monster.configure_archetype(enemy_kind)
     var body := MeshInstance3D.new()
     var capsule := CapsuleMesh.new()
-    capsule.radius = 0.48
-    capsule.height = 2.3
+    capsule.radius = 0.48 if enemy_kind != "stalker" else 0.36
+    capsule.height = 2.3 if enemy_kind != "stalker" else 2.05
     body.mesh = capsule
     body.position.y = 1.15
     var mat := StandardMaterial3D.new()
-    mat.albedo_color = Color(0.012, 0.016, 0.018)
+    mat.albedo_color = Color(0.012, 0.016, 0.018) if enemy_kind != "stalker" else Color(0.045, 0.012, 0.018)
     mat.roughness = 1.0
     body.material_override = mat
     monster.add_child(body)
     var col := CollisionShape3D.new()
     var shape := CapsuleShape3D.new()
-    shape.radius = 0.48
-    shape.height = 2.3
+    shape.radius = 0.48 if enemy_kind != "stalker" else 0.36
+    shape.height = 2.3 if enemy_kind != "stalker" else 2.05
     col.shape = shape
-    col.position.y = 1.15
+    col.position.y = 1.15 if enemy_kind != "stalker" else 1.025
     monster.add_child(col)
     add_child(monster)
 
