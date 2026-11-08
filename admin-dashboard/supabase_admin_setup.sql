@@ -25,6 +25,7 @@ create table if not exists public.game_admin_settings (
   updated_at timestamptz not null default now()
 );
 alter table public.game_admin_settings enable row level security;
+grant select, insert, update, delete on public.game_admin_settings to authenticated;
 drop policy if exists "admin read game settings" on public.game_admin_settings;
 drop policy if exists "admin insert game settings" on public.game_admin_settings;
 drop policy if exists "admin update game settings" on public.game_admin_settings;
@@ -42,6 +43,8 @@ create table if not exists public.admin_audit_logs (
   created_at timestamptz not null default now()
 );
 alter table public.admin_audit_logs enable row level security;
+grant select, insert on public.admin_audit_logs to authenticated;
+grant usage, select on sequence public.admin_audit_logs_id_seq to authenticated;
 drop policy if exists "admin read audit logs" on public.admin_audit_logs;
 drop policy if exists "admin insert audit logs" on public.admin_audit_logs;
 create policy "admin read audit logs" on public.admin_audit_logs for select to authenticated using ((select public.is_dark_night_admin()));
