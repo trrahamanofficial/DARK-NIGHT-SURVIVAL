@@ -20,6 +20,7 @@ func _ready() -> void:
     _spawn_player()
     _spawn_monster()
     _spawn_monster("Stalker", Vector3(19.0, 0.1, -23.0), "stalker")
+    _spawn_monster("Brute", Vector3(-20.0, 0.1, -23.0), "brute")
     _spawn_medkit(Vector3(5.0, 0.0, -7.0))
     _spawn_medkit(Vector3(-8.0, 0.0, -15.0))
     _spawn_resource_pickup(Vector3(8.0, 0.0, -11.0), "cloth", 2)
