@@ -32,6 +32,10 @@ func _ready() -> void:
     call_deferred("_apply_control_settings")
     _apply_quality()
 
+func _notification(what: int) -> void:
+    if what == NOTIFICATION_WM_SIZE_CHANGED:
+        call_deferred("_apply_control_settings")
+
 func _input(event: InputEvent) -> void:
     if not arrange_mode:
         return
