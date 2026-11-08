@@ -13,6 +13,7 @@ var is_game_over := false
 
 func _ready() -> void:
     _setup_environment()
+    _start_forest_ambience()
     _make_ground()
     _make_forest()
     _make_forest_details()
@@ -243,6 +244,7 @@ func _restart_game() -> void:
 
 var game_environment: Environment
 var moon_light: DirectionalLight3D
+var ambience_player: AudioStreamPlayer
 
 func _setup_environment() -> void:
     var env := Environment.new()
@@ -267,6 +269,40 @@ func _setup_environment() -> void:
     moon.directional_shadow_max_distance = 42.0
     moon.shadow_enabled = true
     add_child(moon)
+
+func _is_main_trail(x: float, z: float, half_width: float) -> bool:
+    # Keep the route from the spawn clearing toward the first encounter free of procedural obstacles.
+    return absf(x) < half_width and z > -25.0 and z < 5.0
+
+func _start_forest_ambience() -> void:
+    # Generate a lightweight seamless offline ambience loop; no external audio files are required.
+    var stream := AudioStreamWAV.new()
+    var sample_rate := 22050
+    var seconds := 6
+    var sample_count := sample_rate * seconds
+    var bytes := PackedByteArray()
+    bytes.resize(sample_count * 2)
+    for i in range(sample_count):
+        var t := float(i) / float(sample_rate)
+        var slow_wind := sin(TAU * 0.5 * t) * 0.018
+        var low_wind := sin(TAU * 73.0 * t + sin(TAU * 0.5 * t) * 0.7) * 0.012
+        var distant_wind := sin(TAU * 91.0 * t + sin(TAU * 0.333333 * t)) * 0.006
+        var night_insects := (sin(TAU * 660.0 * t) + sin(TAU * 880.0 * t + 0.4)) * 0.0018
+        var sample := clampf(slow_wind + low_wind + distant_wind + night_insects, -0.08, 0.08)
+        bytes.encode_s16(i * 2, roundi(sample * 32767.0))
+    stream.data = bytes
+    stream.format = AudioStreamWAV.FORMAT_16_BITS
+    stream.mix_rate = sample_rate
+    stream.stereo = false
+    stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+    stream.loop_begin = 0
+    stream.loop_end = sample_count
+    ambience_player = AudioStreamPlayer.new()
+    ambience_player.name = "ForestAmbience"
+    ambience_player.stream = stream
+    ambience_player.volume_db = -18.0
+    ambience_player.autoplay = true
+    add_child(ambience_player)
 
 func _make_ground() -> void:
     var body := StaticBody3D.new()
@@ -294,7 +330,7 @@ func _make_forest() -> void:
     for i in range(85):
         var x := rng.randf_range(-42, 42)
         var z := rng.randf_range(-42, 42)
-        if Vector2(x, z).length() < 5.5:
+        if Vector2(x, z).length() < 5.5 or _is_main_trail(x, z, 2.8):
             continue
         _make_tree(Vector3(x, 0, z), rng.randf_range(0.75, 1.5))
 
@@ -310,7 +346,7 @@ func _make_forest_details() -> void:
     for i in range(70):
         var x := rng.randf_range(-43.0, 43.0)
         var z := rng.randf_range(-43.0, 43.0)
-        if Vector2(x, z).length() < 4.5:
+        if Vector2(x, z).length() < 4.5 or _is_main_trail(x, z, 2.2):
             continue
         if rng.randf() < 0.58:
             var rock := MeshInstance3D.new()
@@ -337,7 +373,7 @@ func _make_forest_details() -> void:
     for i in range(12):
         var x := rng.randf_range(-38.0, 38.0)
         var z := rng.randf_range(-38.0, 38.0)
-        if Vector2(x, z).length() < 7.0:
+        if Vector2(x, z).length() < 7.0 or _is_main_trail(x, z, 3.0):
             continue
         var stump := MeshInstance3D.new()
         var stump_mesh := CylinderMesh.new()
