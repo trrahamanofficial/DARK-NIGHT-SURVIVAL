@@ -69,9 +69,9 @@ jobs:
       - name: Import project resources
         run: ./Godot_v4.7.2-stable_linux.x86_64 --headless --path . --editor --quit
 
-      - name: Export Android APK
+      - name: Install Android build template and export APK
         run: |
-          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path . --export-debug "Android" build/android/DARK-NIGHT-SURVIVAL.apk
+          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path . --install-android-build-template --export-debug "Android" build/android/DARK-NIGHT-SURVIVAL.apk
           test -s build/android/DARK-NIGHT-SURVIVAL.apk
 
       - name: Upload Android APK
